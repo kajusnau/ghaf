@@ -17,6 +17,8 @@ let
   };
   inherit (config.ghaf.services.audio) pulseaudioTcpControlPort;
 
+  icon-theme-base = "/run/current-system/sw/share/icons/${if cfg.gtk.colorScheme == "prefer-dark" then "${cfg.gtk.iconTheme}-Dark" else cfg.gtk.iconTheme}";
+
   launcher-icon = "${pkgs.ghaf-artwork}/icons/launcher.svg";
 
   battery-0-icon = "${pkgs.ghaf-artwork}/icons/battery-0.svg";
@@ -51,7 +53,8 @@ let
 
   logout-icon = "${pkgs.ghaf-artwork}/icons/logout.svg";
 
-  arrow-right-icon = "${pkgs.ghaf-artwork}/icons/arrow-right.svg";
+  arrow-right-icon2 = "${pkgs.ghaf-artwork}/icons/arrow-right.svg";
+  arrow-right-icon = "${icon-theme-base}/24x24/actions/adjustlevels.svg";
 
   # Called by eww.yuck for updates and reloads
   ewwCmd = "${pkgs.eww}/bin/eww -c /etc/eww";
@@ -282,6 +285,8 @@ let
       pkgs.gawk
       pkgs.pulseaudio
       pkgs.pamixer
+      pkgs.gnused
+      pkgs.jq
     ];
     bashOptions = [ ];
     text = ''
@@ -300,10 +305,32 @@ let
       }
 
       get() {
+          updated_sink_inputs=$(pactl -f json list sink-inputs | jq -c '.[]' | while read -r sink_input; do
+              # Extract volume and muted values
+              volume=$(echo "$sink_input" | jq '.volume_percent' | sed 's/%//') # Assuming the field is `volume_percent`
+              muted=$(echo "$sink_input" | jq -r '.mute') # Assuming the field is `mute` (true/false)
+              name=$(echo "$sink_input" | jq -r '.name')  # Sink input name
+              id=$(echo "$sink_input" | jq -r '.index')
+
+              # Calculate the icon
+              icon=$(icon "$volume" "$muted")
+
+              updated_sink_input=$(jq -n --arg level "$volume" \
+                              --arg muted "$muted" \
+                              --arg icon "$icon" \
+                              --arg name "$name" \
+                              --arg id "$id" \
+                              '{level: $volume, muted: $muted, icon: $icon, name: $name, id: $id}')
+
+              # Add the updated object to a new JSON array
+              echo "$updated_sink_input"
+          done | jq -s '.')
+
           volume=$(pamixer --get-volume)
           muted=$(pamixer --get-mute)
           icon=$(icon "$volume" "$muted")
-          echo "{ \"level\": \"$volume\", \"muted\": \"$muted\", \"icon\": \"$icon\" }"
+
+          echo "{ \"system\": { \"level\": \"$volume\", \"muted\": \"$muted\", \"icon\": \"$icon\" }, \"sinkInputs\": $updated_sink_inputs}"
       }
 
       listen() {
@@ -451,7 +478,8 @@ in
         (defvar brightness-popup-visible "false")
         (defvar workspace-popup-visible "false")
         (defvar workspaces-visible "false")
-        ;; (defpoll bluetooth  :interval "3s" :initial "{}" "${pkgs.bt-launcher}/bin/bt-launcher status")
+        (defvar volume-mixer-visible "false")
+        (defvar mixer-sliders "")
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;							    Widgets        							 ;;	
@@ -505,7 +533,8 @@ in
                         :class "settings"
                         (box :class "icon"
                             :hexpand false
-                            :style "background-image: url(\"''${settings-icon}\")")))))
+                            :style "background-image: url(\"''${settings-icon}\")")))
+            (children)))
 
         (defwidget sys_sliders []
             (box
@@ -515,17 +544,39 @@ in
                 :space-evenly false
                 (sys_slider
                         :header "Volume"
-                        :icon {volume.icon}
+                        :icon {volume.system.icon}
                         :icon-onclick "${eww-volume}/bin/eww-volume mute &"
                         :settings-icon "${arrow-right-icon}"
-                        :level { volume.muted == "true" ? "0" : volume.level }
-                        :onchange "PULSE_SERVER=audio-vm:${toString pulseaudioTcpControlPort} ${pkgs.pamixer}/bin/pamixer --unmute --set-volume {} &")
+                        :settings-onclick {volume-mixer-visible == "false" ? "''${EWW_CMD} update volume-mixer-visible=true" : "''${EWW_CMD} update volume-mixer-visible=false"}
+                        :level { volume.system.muted == "true" ? "0" : volume.system.level }
+                        :onchange "PULSE_SERVER=audio-vm:${toString pulseaudioTcpControlPort} ${pkgs.pamixer}/bin/pamixer --unmute --set-volume {} &"
+                        (revealer 
+                                :transition "slidedown"
+                                :duration "250ms"
+                                :reveal volume-mixer-visible
+                                (volume_mixer)))
                 (sys_slider
                         :header "Brightness"
                         :level {brightness.screen.level}
                         :icon {brightness.icon}
                         :min "5"
-                        :onchange "${eww-brightness}/bin/eww-brightness set_screen {} &")))
+                        :onchange "${eww-brightness}/bin/eww-brightness set_screen {} &")
+            )
+        )
+
+        (defwidget volume_mixer []
+            (scroll
+                :hscroll "false"
+                :vscroll "true"
+                :height "150"
+                :class "volume_mixer_scrollbox"
+                (box :orientation "v" :space-evenly false
+                  (for entry in {volume.sinkInputs == "" ? "[]" : volume.sinkInputs}
+                    (sys_slider :header {entry.name == "" ? "" : entry.name} :level {entry.level == "" ? "" : entry.level} :icon {entry.icon == "" ? "" : entry.icon})
+                  )
+                )
+            )
+        )
 
         ;; Generic Widget Buttons For Quick Settings ;;
         (defwidget widget_button [icon ?title ?header ?subtitle ?onclick ?font-icon ?class] 
@@ -679,8 +730,8 @@ in
                 (box :class "hotkey"
                     (sys_slider
                         :valign "center"
-                        :icon {volume.icon}
-                        :level {volume.level})))))
+                        :icon {volume.system.icon}
+                        :level {volume.system.level})))))
 
         ;; Workspace Popup Widget ;;
         (defwidget workspace-popup []
@@ -740,7 +791,7 @@ in
                 :class "control"
                 (quick-settings-button :screen screen
                     :bright-icon {brightness.icon}
-                    :vol-icon {volume.icon}
+                    :vol-icon {volume.system.icon}
                     :bat-icon {battery.icon})))
 
         ;; Divider ;;
@@ -870,7 +921,7 @@ in
             :geometry (geometry  
                         :x "0px" 
                         :y "0px" 
-                        :height "36px"
+                        :height "30px"
                         :width "100%" 
                         :anchor "top center")
             :focusable "false"
@@ -954,9 +1005,10 @@ in
         $bg-secondary: #2B2B2B;
         $text-base: #FFFFFF;
         $text-disabled: #9c9c9c;
-        $text-success: #5AC379;
+        $text-success: rgba(90, 195, 121, 1);
         $icon-subdued: #3D3D3D;
-        $stroke-success: #5AC379;
+        $stroke-success: rgba(90, 195, 121, 1);
+        $stroke-success-muted: rgba(90, 195, 121, 0.75);
         $font-bold: 600;
 
         @mixin unset($rec: false) {
@@ -1041,7 +1093,7 @@ in
             }
         }
 
-        @mixin slider($slider-width: 225px, $slider-height: 2px, $thumb: true, $thumb-width: 1em, $focusable: true, $radius: 7px, $shadows: true, $trough-bg: $widget-hover) {
+        @mixin slider($slider-width: 225px, $slider-height: 2px, $thumb: true, $thumb-width: 1em, $focusable: true, $radius: 7px, $shadows: true, $trough-bg: $widget-hover, $trough-fg: $stroke-success) {
             trough {
                 border-radius: $radius;
                 border: 0;
@@ -1052,7 +1104,7 @@ in
 
                 highlight,
                 progress {
-                    background-color: $stroke-success;
+                    background-color: $trough-fg;
                     border-radius: $radius;
                 }
             }
@@ -1197,11 +1249,15 @@ in
 
         .floating-widget { @include floating_widget; }
 
-        .qs-slider { 
+        .qs-slider {
             @include unset($rec: true);
             @include sys-sliders;
             @include qs-widget($min-height: 0px);
             padding: 0.8em;
+        }
+
+        .volume_mixer_scrollbox .qs-slider .slider {
+            @include slider($trough-fg: $stroke-success-muted);
         }
 
         .hotkey {

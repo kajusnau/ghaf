@@ -174,6 +174,10 @@ let
                 pkgs.pamixer
                 pkgs.eww
                 pkgs.wlr-randr
+                pkgs.pulseaudio
+                pkgs.pamixer
+                pkgs.gnused
+                pkgs.jq
               ]
               ++ [ pkgs.ctrl-panel ]
               ++ (lib.optional (
