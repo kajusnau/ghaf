@@ -40,7 +40,7 @@ writeText "widgets.yuck" ''
                   :visible { header-left != "" && header-left != "null" ? "true" : "false" }
                   :text header-left
                   :halign "start")
-                (eventbox
+                (button
                   :halign "start"
                   :visible { header-onclick != "" && header-onclick != "null" }
                   :onclick header-onclick
@@ -63,7 +63,7 @@ writeText "widgets.yuck" ''
                   :valign "end"
                   :spacing 5
                   :space-evenly false
-                  (eventbox
+                  (button
                       :active { icon-onclick != "" && icon-onclick != "null" ? "true" : "false" }
                       :visible {image != "" || icon != "" || app_icon != ""}
                       :onclick icon-onclick
@@ -93,7 +93,7 @@ writeText "widgets.yuck" ''
                           :onchange onchange
                           :max 100 
                           :min { min ?: 0 }))
-                  (eventbox
+                  (button
                       :visible { settings-onclick != "" && settings-onclick != "null" ? "true" : "false" }
                       :onclick settings-onclick
                       :height 24
@@ -115,7 +115,7 @@ writeText "widgets.yuck" ''
                 :spacing 5
                 :halign "fill"
                 :space-evenly false
-                (eventbox
+                (button
                   :halign "start"
                   :hexpand true
                   :active { header-onclick != "" && header-onclick != "null" }
@@ -154,7 +154,7 @@ writeText "widgets.yuck" ''
                   :valign "end"
                   :spacing 5
                   :space-evenly false
-                  (eventbox
+                  (button
                       :active { icon-onclick != "" && icon-onclick != "null" ? "true" : "false" }
                       :visible {image != "" || icon != "" || app_icon != ""}
                       :onclick icon-onclick
@@ -184,7 +184,7 @@ writeText "widgets.yuck" ''
                           :onchange onchange
                           :max 100 
                           :min { min ?: 0 }))
-                  (eventbox
+                  (button
                       :visible { settings-onclick != "" && settings-onclick != "null" ? "true" : "false" }
                       :onclick settings-onclick
                       :height 24
@@ -329,7 +329,7 @@ writeText "widgets.yuck" ''
 
       ;; Generic Widget Buttons For Quick Settings ;;
       (defwidget widget_button [icon ?title ?header ?subtitle ?onclick ?class]
-          (eventbox :class { class == "" ? "widget-button" : "''${class}" }
+          (button :class { class == "" ? "widget-button" : "''${class}" }
               :onclick onclick
               (box :orientation "v"
                   :class "inner-box"

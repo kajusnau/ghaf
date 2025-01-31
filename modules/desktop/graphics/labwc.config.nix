@@ -53,15 +53,13 @@ let
         # Note:
         # - On Wayland, GTK+ is known for not picking themes from settings.ini.
         # - We define GTK+ theme on Wayland using gsettings (e.g., `gsettings set org.gnome.desktop.interface ...`).
-        mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"
-        echo -e "${gtk_settings}" > "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
 
-        gnome_schema="org.gnome.desktop.interface"
-
-        gsettings set "$gnome_schema" gtk-theme "${cfg.gtk.theme}"
-        gsettings set "$gnome_schema" icon-theme "${cfg.gtk.iconTheme}"
-        gsettings set "$gnome_schema" font-name "${cfg.gtk.fontName} ${cfg.gtk.fontSize}"
-        gsettings set "$gnome_schema" color-scheme "${cfg.gtk.colorScheme}"
+        #mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"
+        #cp -f "${gtk3_style}" "$XDG_CONFIG_HOME/gtk-3.0/gtk.css"
+        #cp -f "${gtk3_settings}" "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
+        #mkdir -p "$XDG_CONFIG_HOME/gtk-4.0"
+        #cp -f "${gtk4_style}" "$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+        #cp -f "${gtk4_settings}" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
       ''
       + cfg.extraAutostart;
   };
@@ -223,7 +221,7 @@ let
 
   makoConfig = ''
     font=${cfg.gtk.fontName} ${cfg.gtk.fontSize}
-    background-color=#121212
+    #background-color=#121212
     progress-color=source #3D8252e6
     on-button-left=invoke-default-action
     on-button-right=dismiss
@@ -295,7 +293,7 @@ let
     MOZ_ENABLE_WAYLAND=1
   '';
 
-  gtk_settings = ''
+  gtk3_settings = pkgs.writeText "settings.ini" ''
     [Settings]
     ${
       if cfg.gtk.colorScheme == "prefer-dark" then
@@ -303,6 +301,26 @@ let
       else
         "gtk-application-prefer-dark-theme = false"
     }
+  '';
+
+  gtk4_settings = pkgs.writeText "settings.ini" ''
+    [Settings]
+    ${
+      if cfg.gtk.colorScheme == "prefer-dark" then
+        "gtk-application-prefer-dark-theme = true"
+      else
+        "gtk-application-prefer-dark-theme = false"
+    }
+  '';
+
+  gtk3_style = pkgs.writeText "gtk.css" ''
+    @define-color accent_bg_color orange;
+    @define-color accent_color green;
+  '';
+
+  gtk4_style = pkgs.writeText "gtk.css" ''
+    @define-color accent_bg_color orange;
+    @define-color accent_color green;
   '';
 
   ghaf-session = pkgs.writeShellApplication {
@@ -434,6 +452,24 @@ in
     };
 
     environment.systemPackages = [ ghaf-session ];
+
+    programs.dconf = {
+      enable = true;
+      profiles.user = {
+        databases = [{
+          lockAll = false;
+          settings = {
+            "org/gnome/desktop/interface" = {
+              color-scheme = cfg.gtk.colorScheme;
+              gtk-theme = cfg.gtk.theme;
+              icon-theme = cfg.gtk.iconTheme;
+              font-name = "${cfg.gtk.fontName} ${cfg.gtk.fontSize}";
+              clock-format = "24h";
+            };
+          };
+        }];
+      };
+    };
 
     services.greetd.settings = {
       initial_session = lib.mkIf (cfg.autologinUser != null) {

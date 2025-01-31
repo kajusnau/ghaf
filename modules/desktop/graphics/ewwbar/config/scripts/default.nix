@@ -565,18 +565,18 @@ let
       active_windows=$(${ewwCmd} active-windows)
 
       if [[ "$active_windows" == *"$1"* ]]; then
-        ${ewwCmd} close "$1" closer &
+        ${ewwCmd} close "$1" &
         exit 0
       fi
 
       # Close all windows except the target
       for window in "''${windows[@]}"; do
-        if [[ "$window" != "$1" ]]; then
+        if [[ "$window" != "$1" && "$active_windows" == *"$window"* ]]; then
           ${ewwCmd} close "$window" &
         fi
       done
 
-      ${ewwCmd} open-many closer "$1" --arg screen="$2" --arg closer:window="$1"
+      ${ewwCmd} open "$1" --screen "$2"
     '';
   };
 

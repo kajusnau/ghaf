@@ -30,19 +30,19 @@
 
   * {
       color: $text-base;
-      font-family: "${fontName}";
-      font-size: 14px;
+      /*font-family: "${fontName}";*/
+      /*font-size: 14px;*/
       :disabled {
           color: $text-disabled;
       }
   }
 
-  window.background {
+  window:not(.bar) {
       background-color: transparent;
   }
 
   tooltip {
-      background-color: $bg-primary;
+      /*background-color: $bg-primary;*/
   }
 
   @mixin widget($bg: $bg-primary, $padding: 10px, $radius: 12px){
@@ -51,11 +51,10 @@
       padding: $padding;
   }
 
-  @mixin floating_widget($bg: $bg-primary, $margin: 0.3em 0.3em 0em 0em, $padding: 14px, $radius: 12px, $unset: true) {
+  @mixin floating_widget($bg: $bg-primary, $margin: 0.3em 0.3em 0em 0em, $padding: 14px, $radius: 12px, $unset: false) {
       @if $unset {
         @include unset;
       }
-      background-color: $bg;
       border-radius: $radius;
       margin: $margin;
       padding: $padding;
@@ -73,25 +72,18 @@
   }
 
   @mixin button($bg: transparent, $hover-bg: $widget-hover) {
-      @include unset;
+      /* @include unset; */
       @include icon;
 
       border-radius: 0.25em;
       padding: 0.4em;
-      background-color: $bg;
+      /*background-color: $bg;*/
+      & {
+        transition: opacity 0.2s ease;
+      }
 
-      .icon{
+      .icon {
           @include icon;
-      }
-
-      &:hover {
-          transition: 200ms linear background-color;
-          background-color: $hover-bg;
-      }
-
-      &:active {
-          transition: 200ms linear background-color;
-          background-color: #1F1F1F;
       }
   }
 
@@ -103,14 +95,12 @@
       trough {
           border-radius: $radius;
           border: 0;
-          background-color: $trough-bg;
           min-height: $slider-height;
           min-width: $slider-width;
           margin: $thumb-width / 2;
 
           highlight,
           progress {
-              background-color: $trough-fg;
               border-radius: $radius;
           }
       }
@@ -118,10 +108,8 @@
       slider {
           border: 0 solid transparent;
           border-radius: 50%;
-          background-image: none;
           box-shadow: none;
           @if $thumb {
-              background-color: #D3D3D3;
               min-height: $thumb-width;
               min-width: $thumb-width;
               margin: -($thumb-width / 2) 0;
@@ -129,14 +117,12 @@
               margin: 0;
               min-width: 0;
               min-height: 0;
-              background-color: transparent;
           }
       }
 
       &:hover {
           slider {
               @if $thumb {
-                  background-color: #D3D3D3;
 
                   @if $shadows {
                       box-shadow: 0px 0px 3px 0px $bg-primary;
@@ -148,7 +134,6 @@
       &:disabled {
           highlight,
           progress {
-              background-image: none;
           }
       }
 
@@ -181,7 +166,6 @@
       min-height: $min-height;
       min-width: $min-width;
       border-radius: $radius;
-      background-color: $bg;
   }
 
   @mixin widget-button($min-width: 133px, $min-height: 58px, $radius: 0.75em, $bg: $widget-bg, $padding: 0.8em) {
@@ -197,16 +181,6 @@
           }
       }
 
-      &:hover {
-          transition: 200ms linear background-color;
-          background-color: $widget-hover;
-      }
-
-      &:active {
-          transition: 200ms linear background-color;
-          background-color: #1F1F1F;
-      }
-
       .icon {
           background-color: transparent;
           background-repeat: no-repeat;
@@ -219,7 +193,6 @@
           .title {
               font-size: 0.9em;
               font-weight: 500;
-              font-family: ${fontName};
           }
 
           .subtitle {
@@ -231,7 +204,7 @@
   }
 
   .qs-widget {
-      @include unset;
+      /* @include unset; */
       @include qs-widget;
   }
 
@@ -240,7 +213,7 @@
   .floating-widget { @include floating_widget; }
 
   .qs-slider {
-      @include unset;
+      /* @include unset; */
       @include sys-sliders;
       @include qs-widget($min-height: 0px);
       padding: 0.8em;
@@ -259,7 +232,6 @@
   .power-menu-button {@include widget-button($min-height: 33px); }
 
   .eww_bar {
-      background-color: $bg-primary;
       padding: 0.2em 0.5em 0.2em 0.5em;
   }
 
@@ -285,7 +257,6 @@
   .time {
       padding: 0.4em 0.25em;
       border-radius: 0.25em;
-      background-color: $bg-primary;
       font-weight: $font-bold;
       font-size: 1em;
   }
@@ -300,7 +271,6 @@
   .keyboard-layout {
       padding: 0.4em 0.25em;
       border-radius: 4px;
-      background-color: $bg-primary;
       font-weight: $font-bold;
       font-size: 1em;
   }
@@ -315,7 +285,7 @@
   }
 
   .cal {
-      @include unset($rec: true);
+      /* @include unset($rec: true); */
       font-size: 1.2em;
       padding: 0.2em 0.2em;
 
@@ -357,6 +327,7 @@
   }
 
   .tray menu {
+      /*
       font-family: ${fontName};
       font-size: 1.1em;
       background-color: $bg-primary;
@@ -407,5 +378,6 @@
               padding: unset;
           }
       }
+      */
   }
 ''

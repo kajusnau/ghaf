@@ -142,15 +142,6 @@ in
         partOf = [ "ghaf-session.target" ];
       };
 
-      eww-display-trigger = {
-        description = "eww-display-trigger";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.bash}/bin/bash -c 'echo 1 > ~/.config/eww/display'";
-        };
-        after = [ "ewwbar.service" ];
-      };
-
       eww-display-handler = {
         enable = true;
         serviceConfig = {
@@ -159,7 +150,7 @@ in
           Restart = "on-failure";
         };
         after = [ "ewwbar.service" ];
-        wantedBy = [ "ewwbar.service" ];
+        wantedBy = [ "ghaf-session.target" ];
         partOf = [ "ghaf-session.target" ];
       };
 

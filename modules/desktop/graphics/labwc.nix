@@ -121,7 +121,7 @@ in
         };
       };
       default = {
-        theme = "Adwaita";
+        theme = "Orchis-Green-Compact";
         iconTheme = "Papirus-Dark";
         colorScheme = "prefer-dark";
         fontName = "Inter";
@@ -144,7 +144,12 @@ in
         [
           pkgs.labwc
           pkgs.ghaf-theme
-          pkgs.papirus-icon-theme
+          pkgs.orchis-theme
+          pkgs.nwg-look
+          pkgs.dconf-editor
+          (pkgs.papirus-icon-theme.override {
+            color = "teal";
+          })
           pkgs.adwaita-icon-theme
 
           (import ./launchers.nix { inherit pkgs config; })
@@ -209,9 +214,6 @@ in
 
     services.upower.enable = true;
     fonts.fontconfig.defaultFonts.sansSerif = [ "Inter" ];
-
-    # dconf is necessary for gsettings to work
-    programs.dconf.enable = true;
 
     # DBus service for accessing the list of user accounts and information attached to those accounts
     services.accounts-daemon.enable = true;
