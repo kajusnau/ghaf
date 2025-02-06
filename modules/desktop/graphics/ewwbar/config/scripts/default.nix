@@ -112,6 +112,7 @@ let
           #scaled_width=$(printf "%.2f" "$(echo "(2 / $scale) * 100" | bc -l)")
           scaled_width=$(echo "$width / $scale" | bc -l | cut -d'.' -f1)
           ${ewwCmd} open --force-wayland --no-daemonize --screen "$display_name" bar --id bar:"$display_name" --arg screen="$display_name" --arg width="$scaled_width"
+          ${ewwCmd} open --force-wayland --no-daemonize --screen "$display_name" window-manager --id window-manager:"$display_name" --arg screen="$display_name"
         done
       }
 
@@ -135,6 +136,7 @@ let
         ''}
         brightness=$(${eww-brightness}/bin/eww-brightness get)
         battery=$(${eww-bat}/bin/eww-bat get)
+        windows=$(${eww-windows}/bin/eww-windows list)
         keyboard_layout=$(setxkbmap -query | awk '/layout/{print $2}' | tr '[:lower:]' '[:upper:]')
         workspace=$(${ghaf-workspace}/bin/ghaf-workspace cur)
         if ! [[ $workspace =~ ^[0-9]+$ ]] ; then
@@ -149,6 +151,7 @@ let
           brightness="$brightness" \
           battery="$battery" \
           keyboard_layout="$keyboard_layout" \
+          windows="$windows" \
           workspace="$workspace"
       }
 
@@ -382,12 +385,13 @@ let
       sinkInputs="[]"
 
       update_sinkInputs() {
-          local id=$1
-          local type=$2
-          local name=$3
-          local volume=$4
-          local isMuted=$5
-          local event=$6
+          id=$1
+          type=$2
+          name=$3
+          volume=$4
+          isMuted=$5
+          isDefault=$6
+          event=$7
 
           case $event in
               0) # Add object
@@ -415,7 +419,7 @@ let
             # If we were already capturing, output the previous signal
             # Start capturing a new signal
             capture = 1;
-            id = type = name = volume = isMuted = event = "";
+            id = type = name = volume = isMuted = isDefault = event = "";
         }
         /int32/ && capture {
             # Parse int32 values in order: id, type, volume, event
@@ -430,15 +434,16 @@ let
             if (arr[1] != "") name = arr[1];
         }
         /boolean/ && capture {
-            # Parse boolean value (isMuted)
-            isMuted = $2;
+            # Parse boolean values in order: isMuted, isDefault
+            if (isMuted == "") isMuted = $2;
+            else if (isDefault == "") isDefault = $2;
         }
         !capture {
-            if (type == 2) print id, type, name, volume, isMuted, event; fflush(stdout);
+            if (type == 2) print id, type, name, volume, isMuted, isDefault, event; fflush(stdout);
         }
-        ' | while read -r id type name volume isMuted event; do
+        ' | while read -r id type name volume isMuted isDefault event; do
             # Update the JSON array based on the extracted values
-            update_sinkInputs "$id" "$type" "$name" "$volume" "$isMuted" "$event"
+            update_sinkInputs "$id" "$type" "$name" "$volume" "$isMuted" "$isDefault" "$event"
             # Print the updated JSON array
             echo "$sinkInputs"
         done
@@ -583,6 +588,90 @@ let
     '';
   };
 
+  eww-windows = pkgs.writeShellApplication {
+    name = "eww-windows";
+    runtimeInputs = [
+      pkgs.wlrctl
+      pkgs.jq
+      pkgs.gawk
+    ];
+    bashOptions = [ ];
+    text = ''
+      WINDOW_LIST_CMD="wlrctl window list"
+      ACTIVE_WINDOW_CMD="wlrctl window list state:active"
+      FOCUS_CMD="wlrctl window focus"
+      CLOSE_CMD="wlrctl window close"
+      PREV_OUTPUT=""
+
+      get_window_list() {
+          NEW_OUTPUT=$(eval "$WINDOW_LIST_CMD")
+          
+          JSON_ARRAY=$(echo "$NEW_OUTPUT" | awk -F': ' -v active_cmd="$ACTIVE_WINDOW_CMD" '
+          BEGIN {
+              while ((active_cmd | getline line) > 0) {
+                  active_windows[line] = 1;
+              }
+              close(active_cmd);
+          }
+          {
+              if ($1 == "") next;
+              active = ($1 in active_windows) ? "true" : "false";
+              print "{\"name\": \""$1"\", \"friendly_name\": \""$2"\", \"active\": "active"}"
+          }' | jq -c -s --unbuffered .)
+          
+          echo "$JSON_ARRAY"
+      }
+
+      listen() {
+          while true; do
+              NEW_OUTPUT=$(eval "$WINDOW_LIST_CMD")
+              
+              if [[ "$NEW_OUTPUT" != "$PREV_OUTPUT" ]]; then
+                  PREV_OUTPUT="$NEW_OUTPUT"
+                  get_window_list
+              fi
+              
+              sleep 1
+          done
+      }
+
+      focus() {
+          if [ -z "$1" ]; then
+              echo "Usage: $0 focus <window_name>"
+              exit 1
+          fi
+          eval "$FOCUS_CMD '$1'"
+      }
+
+      close() {
+          if [ -z "$1" ]; then
+              echo "Usage: $0 close <window_name>"
+              exit 1
+          fi
+          eval "$CLOSE_CMD '$1'"
+      }
+
+      case "$1" in
+          listen)
+              listen
+              ;;
+          focus)
+              focus "$2"
+              ;;
+          close)
+              close "$2"
+              ;;
+          list)
+              get_window_list
+              ;;
+          *)
+              echo "Usage: $0 {listen|focus <window_name>|list}"
+              exit 1
+              ;;
+      esac
+    '';
+  };
+
 in
 {
   # Export each shell application as a top-level attribute
@@ -593,5 +682,6 @@ in
     eww-audio
     eww-display
     eww-open-widget
+    eww-windows
     ;
 }

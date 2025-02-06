@@ -23,7 +23,7 @@ writeText "widgets.yuck" ''
                   :style "background-image: url(\"${pkgs.ghaf-artwork}/icons/launcher.svg\")")))
 
       ;; Generic slider widget ;;
-      (defwidget slider [?visible ?header-left ?header-onclick ?header-right ?icon ?image ?app_icon ?settings_icon level ?onchange ?settings-onclick ?icon-onclick ?class ?min]
+      (defwidget slider [?visible ?header-left ?header-onclick ?header-right ?icon ?image ?app_icon ?settings_icon level ?onchange ?settings-onclick ?icon-onclick ?class ?min ?slider-active]
           (box :orientation "v"
               :visible { visible ?: "true"}
               :class "''${class}"
@@ -64,8 +64,7 @@ writeText "widgets.yuck" ''
                   :spacing 5
                   :space-evenly false
                   (eventbox
-                      :active { icon-onclick != "" && icon-onclick != "null" }
-                      :visible {image != "" || icon != "" || app_icon != ""}
+                      :visible {image != "" || icon != "" || app_icon != "" && icon-onclick != "" && icon-onclick != "null"}
                       :onclick icon-onclick
                       :height 24
                       :width 24
@@ -82,10 +81,25 @@ writeText "widgets.yuck" ''
                         )
                       )
                   )
+                  (box 
+                    :visible {icon-onclick == "" || icon-onclick == "null"}
+                    :height 24
+                    :width 24
+                    (image :class "icon" :visible { image != "" } :path image :image-height 24 :image-width 24)
+                    (image 
+                      :class "icon"
+                      :visible { image == "" }
+                      :icon {icon != "" ? icon : app_icon != "" ? app_icon : "icon-missing" } 
+                      :image-height 24
+                      :image-width 24
+                      :style {app_icon != "" ? "opacity: ''${level == 0 || level == min ? "0.5" : "1"}" : ""} 
+                    )
+                  )
                   (eventbox
                       :class "slider"
                       :hexpand true
                       (scale
+                          :active {slider-active ?: "true"}
                           :orientation "h"
                           :value level
                           :round-digits 0
@@ -154,8 +168,7 @@ writeText "widgets.yuck" ''
                   :spacing 5
                   :space-evenly false
                   (eventbox
-                      :active { icon-onclick != "" && icon-onclick != "null" }
-                      :visible {image != "" || icon != "" || app_icon != ""}
+                      :visible {image != "" || icon != "" || app_icon != "" && icon-onclick != "" && icon-onclick != "null"}
                       :onclick icon-onclick
                       :height 24
                       :width 24
@@ -166,11 +179,25 @@ writeText "widgets.yuck" ''
                           :class "icon"
                           :visible { image == "" }
                           :icon {icon != "" ? icon : app_icon != "" ? app_icon : "icon-missing" } 
-                          :image-height 24 
-                          :image-width 24 
+                          :image-height 24
+                          :image-width 24
                           :style {app_icon != "" ? "opacity: ''${level == 0 || level == min ? "0.5" : "1"}" : ""} 
                         )
                       )
+                  )
+                  (box 
+                    :visible {icon-onclick == "" || icon-onclick == "null"}
+                    :height 24
+                    :width 24
+                    (image :class "icon" :visible { image != "" } :path image :image-height 24 :image-width 24)
+                    (image 
+                      :class "icon"
+                      :visible { image == "" }
+                      :icon {icon != "" ? icon : app_icon != "" ? app_icon : "icon-missing" } 
+                      :image-height 24
+                      :image-width 24
+                      :style {app_icon != "" ? "opacity: ''${level == 0 || level == min ? "0.5" : "1"}" : ""} 
+                    )
                   )
                   (eventbox
                       :class "slider"
@@ -216,6 +243,7 @@ writeText "widgets.yuck" ''
                               audio_output.volume_percentage <= 75 ? "${pkgs.ghaf-artwork}/icons/volume-2.svg" : "${pkgs.ghaf-artwork}/icons/volume-3.svg" }
                       :icon-onclick "${ewwScripts.eww-audio}/bin/eww-audio mute &"
                       :settings_icon "adjustlevels"
+                      :settings-onclick "''${EWW_CMD} update volume-mixer-visible=''${!volume-mixer-visible} &"
                       :level { audio_output.is_muted == "true" ? "0" : audio_output.volume_percentage }
                       :onchange "${ewwScripts.eww-audio}/bin/eww-audio set_volume {} &"
                       (audio_output_selector)
@@ -309,8 +337,8 @@ writeText "widgets.yuck" ''
               :hscroll "false"
               :vscroll "true"
               :visible { visible ?: "true" }
-              :height { 30 * min(4,arraylength(audio_streams)) }
-              (box :orientation "v" :space-evenly false :spacing 10
+              :height { 50 * min(4,arraylength(audio_streams)) }
+              (box :orientation "v" :space-evenly true :spacing 10
                 (for entry in {audio_streams}
                   (slider 
                       :class "qs-slider"
@@ -463,10 +491,11 @@ writeText "widgets.yuck" ''
 
       ;; Brightness Popup Widget ;;
       (defwidget brightness-popup []
-          (revealer :transition "crossfade" :duration "200ms" :reveal brightness-popup-visible :active false
+          (revealer :transition "crossfade" :duration "200ms" :reveal brightness-popup-visible
               (desktop-widget :class "popup"
                   (slider
                       :valign "center"
+                      :slider-active "false"
                       :image { brightness.screen.level == 0 ? "${pkgs.ghaf-artwork}/icons/brightness-0.svg" :
                               brightness.screen.level < 12 ? "${pkgs.ghaf-artwork}/icons/brightness-1.svg" :
                               brightness.screen.level < 25 ? "${pkgs.ghaf-artwork}/icons/brightness-2.svg" :
@@ -480,10 +509,11 @@ writeText "widgets.yuck" ''
 
       ;; Volume Popup Widget ;;
       (defwidget volume-popup []
-          (revealer :transition "crossfade" :duration "200ms" :reveal volume-popup-visible :active false
+          (revealer :transition "crossfade" :duration "200ms" :reveal volume-popup-visible
               (desktop-widget :class "popup"
                   (slider
                       :valign "center"
+                      :slider-active "false"
                       :image { audio_output.is_muted == "true" || audio_output.volume_percentage == 0 ? "${pkgs.ghaf-artwork}/icons/volume-0.svg" :
                                audio_output.volume_percentage <= 25 ? "${pkgs.ghaf-artwork}/icons/volume-1.svg" :
                                audio_output.volume_percentage <= 75 ? "${pkgs.ghaf-artwork}/icons/volume-2.svg" : "${pkgs.ghaf-artwork}/icons/volume-3.svg" }
@@ -501,7 +531,7 @@ writeText "widgets.yuck" ''
               :onclick "''${EWW_CMD} update audio_output_selector_visible=false audio_input_selector_visible=false & ${ewwScripts.eww-open-widget}/bin/eww-open-widget quick-settings \"''${screen}\" &"
               (box :orientation "h"
                   :space-evenly "false"
-                  :spacing 14
+                  :spacing 10
                   :valign "center"
                   (image :visible { bright-icon != "" }
                       :class "icon" 
@@ -600,7 +630,11 @@ writeText "widgets.yuck" ''
               (button :class "default_button"
                       :tooltip "Current desktop"
                       :onclick {workspaces-visible == "false" ? "''${EWW_CMD} update workspaces-visible=true" : "''${EWW_CMD} update workspaces-visible=false"}
-                      workspace)
+                      (image 
+                        :class "icon"
+                        :icon "indicator-workspaces-''${workspace}"
+                      )
+              )
               (revealer
                   :transition "slideright"
                   :duration "250ms"
@@ -613,7 +647,12 @@ writeText "widgets.yuck" ''
                               builtins.map (index: ''
                                 (button :class "default_button"
                                     :onclick "${ghaf-workspace}/bin/ghaf-workspace switch ${toString index}; ''${EWW_CMD} update workspaces-visible=false"
-                                    "${toString index}")
+                                    (image 
+                                      :class "icon"
+                                      :active {workspace == ${toString index}}
+                                      :icon "indicator-workspaces-${toString index}"
+                                    )
+                                )
                               '') (lib.lists.range 1 cfg.maxDesktops)
                             )
                           })))))
@@ -625,10 +664,37 @@ writeText "widgets.yuck" ''
               :spacing 14
               :halign "start"
               :valign "center"
+              :hexpand "true"
               (launcher)
               (label :text audio_streams :visible "false")
-              (divider)
-              (workspaces)))
+              (label :text windows :visible "false")
+              (workspaces)
+              ))
+
+      (defwidget window-manager []
+        (eventbox
+          :onhoverlost "''${EWW_CMD} update window-manager-visible=false &"
+          :visible {arraylength(windows) > 0 ? window-manager-visible : "false"}
+          (desktop-widget
+            (scroll
+              :hscroll { arraylength(windows) >= 10 }
+              :width { arraylength(windows) < 10 ? 56 * arraylength(windows) : 560 }
+              :vscroll "false"
+              (box :orientation "h"
+                (for window in {windows}
+                  (button
+                    :class "default_button"
+                    :onclick "${ewwScripts.eww-windows}/bin/eww-windows focus ''${ window.name } & ''${EWW_CMD} update window-manager-visible=''${!window-manager-visible} & ${pkgs.nwg-drawer}/bin/nwg-drawer -close &"
+                    :onmiddleclick "${ewwScripts.eww-windows}/bin/eww-windows close ''${ window.name } &"
+                    :tooltip { window.friendly_name }
+                    (image :halign "start" :icon { window.name } :icon-size "dialog")
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
 
       ;; Center Widgets ;;
       (defwidget bar_center [screen]
@@ -656,9 +722,8 @@ writeText "widgets.yuck" ''
               :halign "end" 
               :valign "center" 
               :spacing 14
-              (systray :orientation "h" :spacing 14 :prepend-new true :class "tray")
-              (divider)
-              ${lib.optionalString useGivc "(control :screen screen) (divider)"}
+              (systray :orientation "h" :spacing 10 :prepend-new true :class "tray")
+              ${lib.optionalString useGivc "(control :screen screen)"}
               (power-menu-launcher :screen screen)))
 
       ;; Bar ;;

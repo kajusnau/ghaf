@@ -48,20 +48,6 @@ let
             ${ghaf-workspace}/bin/ghaf-workspace switch "$current_workspace"
         fi
         ${ghaf-workspace}/bin/ghaf-workspace max ${toString cfg.maxDesktops}
-
-        # Write the GTK settings to the settings.ini file in the GTK config directory
-        # Note:
-        # - On Wayland, GTK+ is known for not picking themes from settings.ini.
-        # - We define GTK+ theme on Wayland using gsettings (e.g., `gsettings set org.gnome.desktop.interface ...`).
-        mkdir -p "$XDG_CONFIG_HOME/gtk-3.0"
-        echo -e "${gtk_settings}" > "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
-
-        gnome_schema="org.gnome.desktop.interface"
-
-        gsettings set "$gnome_schema" gtk-theme "${cfg.gtk.theme}"
-        gsettings set "$gnome_schema" icon-theme "${cfg.gtk.iconTheme}"
-        gsettings set "$gnome_schema" font-name "${cfg.gtk.fontName} ${cfg.gtk.fontSize}"
-        gsettings set "$gnome_schema" color-scheme "${cfg.gtk.colorScheme}"
       ''
       + cfg.extraAutostart;
   };
@@ -101,6 +87,7 @@ let
     </placement>
     <desktops number="${toString cfg.maxDesktops}">
       <popupTime>0</popupTime>
+      <prefix>Desktop</prefix>
     </desktops>
     <keyboard>
       <default />
@@ -163,6 +150,7 @@ let
       </keybind>
       <keybind key="Super_L" onRelease="yes">
         <action name="Execute" command="${pkgs.procps}/bin/pkill -USR1 nwg-drawer" />
+        <action name="Execute" command="${toggle-window-manager}/bin/toggle-window-manager" />
       </keybind>
     </keyboard>
     <mouse>
@@ -324,6 +312,22 @@ let
     text = "labwc -C /etc/labwc -s labwc-autostart >/tmp/session.labwc.log 2>&1";
   };
 
+  toggle-window-manager = pkgs.writeShellApplication {
+    name = "toggle-window-manager";
+    bashOptions = [ ];
+    runtimeInputs = [
+      pkgs.eww
+    ];
+
+    text = ''
+      current_status=$(eww -c /etc/eww get window-manager-visible)
+
+      reversed_status=$([[ "$current_status" == "true" ]] && echo "false" || echo "true")
+
+      eww -c /etc/eww update window-manager-visible="$reversed_status"
+    '';
+  };
+
   auto-display-scale = pkgs.writeShellApplication {
     name = "auto-display-scale";
     runtimeInputs = [
@@ -368,7 +372,8 @@ let
 
           # Check if the display is a TV size
           is_tv=$(echo "$diagonal_in >= 40" | bc -l) # Consider displays with a diagonal >= 40 inches as TVs
-          if [[ "$is_tv" -eq 1 ]]; then
+          is_4k=$(echo "$width_px >= 3840 && $height_px >= 2160" | bc -l)
+          if [[ "$is_tv" -eq 1 && "$is_4k" -eq 1 ]]; then
               if (( $(echo "$diagonal_in <= 65" | bc -l) )); then
                   calculated_scale=1.50 # Apply 150% scaling for TVs 65 inches and under
               else
@@ -442,6 +447,24 @@ in
     };
 
     environment.systemPackages = [ ghaf-session ];
+
+    programs.dconf = {
+      enable = true;
+      profiles.user = {
+        databases = [{
+          lockAll = false;
+          settings = {
+            "org/gnome/desktop/interface" = {
+              color-scheme = cfg.gtk.colorScheme;
+              gtk-theme = cfg.gtk.theme;
+              icon-theme = cfg.gtk.iconTheme;
+              font-name = "${cfg.gtk.fontName} ${cfg.gtk.fontSize}";
+              clock-format = "24h";
+            };
+          };
+        }];
+      };
+    };
 
     services.greetd.settings = {
       initial_session = lib.mkIf (cfg.autologinUser != null) {

@@ -31,7 +31,7 @@
   * {
       color: $text-base;
       font-family: "${fontName}";
-      font-size: 14px;
+      font-size: 11px;
       :disabled {
           color: $text-disabled;
       }
@@ -69,7 +69,6 @@
       min-height: 24px;
       min-width: 24px;
       color: #FFFFFF;
-      -gtk-icon-effect: none;
   }
 
   @mixin button($bg: transparent, $hover-bg: $widget-hover) {
@@ -171,7 +170,7 @@
       .slider{ @include slider; }
 
       .header {
-          font-size: 0.9em;
+          font-size: 1em;
           font-weight: $font-bold;
           font-family: ${fontName};
       }
@@ -193,7 +192,7 @@
           min-height: $min-height;
           .header {
               font-weight: $font-bold;
-              font-size: 0.9em;
+              font-size: 1em;
           }
       }
 
@@ -217,14 +216,14 @@
 
       .text {
           .title {
-              font-size: 0.9em;
+              font-size: 1em;
               font-weight: 500;
               font-family: ${fontName};
           }
 
           .subtitle {
               font-weight: 400;
-              font-size: 0.8em;
+              font-size: 1em;
               min-height: 0px;
           }
       }
@@ -260,19 +259,26 @@
 
   .eww_bar {
       background-color: $bg-primary;
-      padding: 0.2em 0.5em 0.2em 0.5em;
+  }
+  
+  .window-manager .floating-widget {
+      box-shadow: inset 0 0 1.5px lightgray;
   }
 
   .default_button {
       @include button;
       label {
-        font-size: 0.9em;
+        font-size: 1em;
       }
       .header {
-        font-size: 0.9em;
+        font-size: 1em;
         font-weight: $font-bold;
         font-family: ${fontName};
       }
+  }
+
+  .eww_bar .default_button {
+      padding: 0.2em 0.7em;
   }
 
   .divider {
@@ -316,11 +322,11 @@
 
   .cal {
       @include unset($rec: true);
-      font-size: 1.2em;
+      font-size: 1.3em;
       padding: 0.2em 0.2em;
 
       calendar {
-          font-size: 1.2em;
+          font-size: 1.3em;
           padding: 0.2em 0.2em;
 
           &.header {
@@ -358,7 +364,7 @@
 
   .tray menu {
       font-family: ${fontName};
-      font-size: 1.1em;
+      font-size: 1.2em;
       background-color: $bg-primary;
 
       >menuitem {
