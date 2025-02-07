@@ -673,8 +673,7 @@ writeText "widgets.yuck" ''
 
       (defwidget window-manager []
         (eventbox
-          :onhoverlost "''${EWW_CMD} update window-manager-visible=false &"
-          :visible {arraylength(windows) > 0 ? window-manager-visible : "false"}
+          :onhoverlost "''${EWW_CMD} close window-manager &"
           (desktop-widget
             (scroll
               :hscroll { arraylength(windows) >= 10 }
@@ -684,15 +683,21 @@ writeText "widgets.yuck" ''
                 (for window in {windows}
                   (button
                     :class "default_button"
-                    :onclick "${ewwScripts.eww-windows}/bin/eww-windows focus ''${ window.name } & ''${EWW_CMD} update window-manager-visible=''${!window-manager-visible} & ${pkgs.nwg-drawer}/bin/nwg-drawer -close &"
+                    :onclick "${ewwScripts.eww-windows}/bin/eww-windows focus ''${ window.name } & ''${EWW_CMD} close window-manager &"
                     :onmiddleclick "${ewwScripts.eww-windows}/bin/eww-windows close ''${ window.name } &"
                     :tooltip { window.friendly_name }
-                    (image :halign "start" :icon { window.name } :icon-size "dialog")
+                    (image :halign "start" :icon-size "dialog" :icon { matches(window.name, "chrome-app\\.(\\w+)") ? (captures(window.name, "chrome-app\\.(\\w+)"))[0][1] : window.name } )
                   )
                 )
               )
             )
           )
+        )
+      )
+
+      (defwidget window-manager-trigger [screen]
+        (eventbox 
+          :onhover {arraylength(windows) > 0 ? "''${EWW_CMD} open window-manager --screen \"''${screen}\" &" : ""}
         )
       )
 

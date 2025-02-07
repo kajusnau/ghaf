@@ -261,10 +261,6 @@
       background-color: $bg-primary;
   }
   
-  .window-manager .floating-widget {
-      box-shadow: inset 0 0 1.5px lightgray;
-  }
-
   .default_button {
       @include button;
       label {

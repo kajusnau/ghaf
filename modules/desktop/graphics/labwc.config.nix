@@ -150,7 +150,6 @@ let
       </keybind>
       <keybind key="Super_L" onRelease="yes">
         <action name="Execute" command="${pkgs.procps}/bin/pkill -USR1 nwg-drawer" />
-        <action name="Execute" command="${toggle-window-manager}/bin/toggle-window-manager" />
       </keybind>
     </keyboard>
     <mouse>
@@ -310,22 +309,6 @@ let
     ];
 
     text = "labwc -C /etc/labwc -s labwc-autostart >/tmp/session.labwc.log 2>&1";
-  };
-
-  toggle-window-manager = pkgs.writeShellApplication {
-    name = "toggle-window-manager";
-    bashOptions = [ ];
-    runtimeInputs = [
-      pkgs.eww
-    ];
-
-    text = ''
-      current_status=$(eww -c /etc/eww get window-manager-visible)
-
-      reversed_status=$([[ "$current_status" == "true" ]] && echo "false" || echo "true")
-
-      eww -c /etc/eww update window-manager-visible="$reversed_status"
-    '';
   };
 
   auto-display-scale = pkgs.writeShellApplication {

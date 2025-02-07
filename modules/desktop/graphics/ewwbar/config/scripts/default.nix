@@ -112,7 +112,7 @@ let
           #scaled_width=$(printf "%.2f" "$(echo "(2 / $scale) * 100" | bc -l)")
           scaled_width=$(echo "$width / $scale" | bc -l | cut -d'.' -f1)
           ${ewwCmd} open --force-wayland --no-daemonize --screen "$display_name" bar --id bar:"$display_name" --arg screen="$display_name" --arg width="$scaled_width"
-          ${ewwCmd} open --force-wayland --no-daemonize --screen "$display_name" window-manager --id window-manager:"$display_name" --arg screen="$display_name"
+          ${ewwCmd} open --force-wayland --no-daemonize --screen "$display_name" window-manager-trigger --id window-manager-trigger:"$display_name" --arg screen="$display_name"
         done
       }
 
