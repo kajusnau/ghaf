@@ -115,6 +115,20 @@ in
         description = "ewwbar";
         serviceConfig = {
           Type = "forking";
+          ExecStartPre = 
+          let 
+            display-connected = pkgs.writeShellApplication {
+              name = "display-connected";
+                runtimeInputs = [
+                  pkgs.wlr-randr
+                ];
+                bashOptions = [ ];
+                text = ''
+                  wlr-randr || exit 1
+                '';
+            };  
+          in
+            "${display-connected}/bin/display-connected";
           ExecStart = "${ewwScripts.ewwbar-ctrl}/bin/ewwbar-ctrl start";
           ExecReload = "${ewwScripts.ewwbar-ctrl}/bin/ewwbar-ctrl reload";
           Restart = "always";

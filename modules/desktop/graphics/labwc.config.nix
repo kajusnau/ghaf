@@ -461,6 +461,20 @@ in
         serviceConfig = {
           Type = "simple";
           EnvironmentFile = "-/etc/locale.conf";
+          ExecStartPre = 
+          let 
+            display-connected = pkgs.writeShellApplication {
+              name = "display-connected";
+                runtimeInputs = [
+                  pkgs.wlr-randr
+                ];
+                bashOptions = [ ];
+                text = ''
+                  wlr-randr || exit 1
+                '';
+            };  
+          in
+            "${display-connected}/bin/display-connected";
           ExecStart = "${pkgs.nwg-drawer}/bin/nwg-drawer -r -nofs -nocats -s ${drawerStyle}";
           Restart = "always";
           RestartSec = "1";
