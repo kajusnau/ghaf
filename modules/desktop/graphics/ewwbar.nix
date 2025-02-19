@@ -115,9 +115,31 @@ in
         description = "ewwbar";
         serviceConfig = {
           Type = "forking";
-          ExecCondition = ''
-            ${pkgs.bash}/bin/bash -c "${pkgs.wlr-randr}/bin/wlr-randr > /dev/null 2>&1"
-          '';
+          ExecCondition = 
+          let
+            check-headless = pkgs.writeShellApplication {
+              name = "check-headless";
+              runtimeInputs = [
+                pkgs.jq
+                pkgs.wlr-randr
+              ];
+              bashOptions = [ ];
+              text = ''
+                  if ! wlr_randr_output=$(wlr-randr --json); then
+                    echo "Error: Failed to get display info from wlr-randr"
+                    exit 1
+                  fi
+                  displays=$(echo "$wlr_randr_output" | jq 'length')
+
+                  # Check if there are any connected displays
+                  if [ "$displays" -eq 0 ]; then
+                      echo "Error: No connected displays found."
+                      exit 1
+                  fi
+              '';
+            };
+          in
+            "${check-headless}/bin/check-headless";
           ExecStart = "${ewwScripts.ewwbar-ctrl}/bin/ewwbar-ctrl start";
           ExecReload = "${ewwScripts.ewwbar-ctrl}/bin/ewwbar-ctrl reload";
           ExecStopPost = ''
