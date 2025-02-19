@@ -149,18 +149,6 @@ in
         partOf = [ "ewwbar.service" ];
       };
 
-      eww-display-handler = {
-        enable = true;
-        serviceConfig = {
-          Type = "simple";
-          ExecStart = "${ewwScripts.eww-display}/bin/eww-display";
-          Restart = "on-failure";
-        };
-        after = [ "ewwbar.service" ];
-        wantedBy = [ "ewwbar.service" ];
-        partOf = [ "ewwbar.service" ];
-      };
-
       eww-volume-popup = {
         enable = true;
         serviceConfig = {
