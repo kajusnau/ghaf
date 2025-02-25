@@ -12,6 +12,7 @@ let
   inherit (import ../../../../lib/launcher.nix { inherit pkgs lib; }) rmDesktopEntries;
   guivmBaseConfiguration = {
     imports = [
+      inputs.nixos-cosmic.nixosModules.default
       inputs.impermanence.nixosModules.impermanence
       inputs.self.nixosModules.givc-guivm
       (import ./common/vm-networking.nix {
@@ -157,6 +158,9 @@ let
                 esac
               '';
             };
+
+            desktopManager.cosmic.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
+            displayManager.cosmic-greeter.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
 
             # Suspend inside Qemu causes segfault
             # See: https://gitlab.com/qemu-project/qemu/-/issues/2321

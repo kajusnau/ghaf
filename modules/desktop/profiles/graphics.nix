@@ -9,7 +9,10 @@
 }:
 let
   cfg = config.ghaf.profiles.graphics;
-  compositors = [ "labwc" ];
+  compositors = [
+    "labwc"
+    "cosmic"
+  ];
   renderers = [
     "vulkan"
     "pixman"
@@ -29,7 +32,7 @@ in
     enable = mkEnableOption "Graphics profile";
     compositor = mkOption {
       type = types.enum compositors;
-      default = "labwc";
+      default = "cosmic";
       description = ''
         Which Wayland compositor to use.
 
@@ -110,6 +113,7 @@ in
 
     ghaf.graphics = {
       labwc.enable = cfg.compositor == "labwc";
+      cosmic.enable = cfg.compositor == "cosmic";
     };
   };
 }
