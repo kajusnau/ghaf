@@ -66,6 +66,6 @@ writeShellApplication {
     shift 2
 
     export NIX_SSHOPTS="-o ProxyJump=root@$proxy_jump"
-    nixos-rebuild --flake "$build_target" --target-host root@ghaf-host --fast "$@"
+    nixos-rebuild --cores 1 -j 1 --flake "$build_target" --target-host root@ghaf-host --fast "$@"
   '';
 }
