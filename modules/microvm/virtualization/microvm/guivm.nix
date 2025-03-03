@@ -161,6 +161,7 @@ let
             # Suspend inside Qemu causes segfault
             # See: https://gitlab.com/qemu-project/qemu/-/issues/2321
             logind.lidSwitch = "ignore";
+            logind.killUserProcesses = true;
 
             # We dont enable services.blueman because it adds blueman desktop entry
             dbus.packages = [ pkgs.blueman ];

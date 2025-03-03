@@ -273,7 +273,7 @@ let
     reboot-command=${ghaf-powercontrol}/bin/ghaf-powercontrol reboot &
     poweroff-command=${ghaf-powercontrol}/bin/ghaf-powercontrol poweroff &
     suspend-command=${ghaf-powercontrol}/bin/ghaf-powercontrol suspend &
-    logout-command=${pkgs.labwc}/bin/labwc --exit &
+    logout-command=(${pkgs.wayland-logout}/bin/wayland-logout; ${pkgs.systemd}/bin/loginctl kill-user $USER -s SIGKILL) &
     #userswitch-command=
   '';
 
@@ -538,7 +538,7 @@ in
           EnvironmentFile = "-/etc/locale.conf";
           ExecCondition = "${display-connected}/bin/display-connected";
           ExecStart = "${pkgs.nwg-drawer}/bin/nwg-drawer -r -nofs -nocats -s ${drawerStyle}";
-          Restart = "always";
+          #Restart = "always";
           RestartSec = "1";
         };
         startLimitIntervalSec = 0;
@@ -584,7 +584,7 @@ in
         description = "network manager graphical interface.";
         serviceConfig = {
           Type = "simple";
-          Restart = "always";
+          #Restart = "always";
           RestartSec = "1";
           Environment = "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock";
           ExecCondition = "${display-connected}/bin/display-connected";
@@ -601,7 +601,7 @@ in
 
         serviceConfig = {
           Type = "simple";
-          Restart = "always";
+          #Restart = "always";
           RestartSec = "5";
           ExecCondition = "${display-connected}/bin/display-connected";
           ExecStart = "${pkgs.ghaf-audio-control}/bin/GhafAudioControlStandalone --pulseaudio_server=audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort} --deamon_mode=true --indicator_icon_name=audio-subwoofer";
@@ -617,7 +617,7 @@ in
         enable = true;
         serviceConfig = {
           Type = "simple";
-          Restart = "always";
+          #Restart = "always";
           RestartSec = "1";
           ExecStart = [
             ""
