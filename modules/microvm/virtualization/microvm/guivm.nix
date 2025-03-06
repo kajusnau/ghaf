@@ -10,8 +10,12 @@
 let
   vmName = "gui-vm";
   inherit (import ../../../../lib/launcher.nix { inherit pkgs lib; }) rmDesktopEntries;
+  ghaf-powercontrol = pkgs.callPackage ../../../../packages/ghaf-powercontrol {
+    ghafConfig = config.ghaf;
+  };
   guivmBaseConfiguration = {
     imports = [
+      inputs.nixos-cosmic.nixosModules.default
       inputs.impermanence.nixosModules.impermanence
       inputs.self.nixosModules.givc-guivm
       (import ./common/vm-networking.nix {
@@ -170,6 +174,9 @@ let
               '';
             };
 
+            desktopManager.cosmic.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
+            displayManager.cosmic-greeter.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
+
             # Suspend inside Qemu causes segfault
             # See: https://gitlab.com/qemu-project/qemu/-/issues/2321
             logind.lidSwitch = "ignore";
@@ -180,6 +187,44 @@ let
 
           systemd = {
             packages = [ pkgs.blueman ];
+
+            services = {
+              ghaf-shutdown = {
+                enable = true;
+                description = "Run ghaf-powercontrol before shutdown";
+                wantedBy = [ "shutdown.target" ];
+                before = [ "shutdown.target" ];
+                serviceConfig = {
+                  Type = "oneshot";
+                  RemainAfterExit = true;
+                  ExecStop = "${ghaf-powercontrol}/bin/ghaf-powercontrol poweroff";
+                };
+              };
+
+              ghaf-reboot = {
+                enable = true;
+                description = "Run ghaf-powercontrol before reboot";
+                wantedBy = [ "reboot.target" ];
+                before = [ "reboot.target" ];
+                serviceConfig = {
+                  Type = "oneshot";
+                  RemainAfterExit = true;
+                  ExecStop = "${ghaf-powercontrol}/bin/ghaf-powercontrol reboot";
+                };
+              };
+
+              ghaf-suspend = {
+                enable = true;
+                description = "Run ghaf-powercontrol before suspend";
+                wantedBy = [ "suspend.target" ];
+                before = [ "suspend.target" ];
+                serviceConfig = {
+                  Type = "oneshot";
+                  RemainAfterExit = true;
+                  ExecStop = "${ghaf-powercontrol}/bin/ghaf-powercontrol suspend";
+                };
+              };
+            };
 
             services."waypipe-ssh-keygen" =
               let

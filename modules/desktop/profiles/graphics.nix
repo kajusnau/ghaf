@@ -9,7 +9,10 @@
 }:
 let
   cfg = config.ghaf.profiles.graphics;
-  compositors = [ "labwc" ];
+  compositors = [
+    "labwc"
+    "cosmic"
+  ];
   renderers = [
     "vulkan"
     "pixman"
@@ -28,7 +31,7 @@ in
     enable = mkEnableOption "Graphics profile";
     compositor = mkOption {
       type = types.enum compositors;
-      default = "labwc";
+      default = "cosmic";
       description = ''
         Which Wayland compositor to use.
 
@@ -37,7 +40,7 @@ in
     };
     renderer = lib.mkOption {
       type = lib.types.enum renderers;
-      default = "gles2";
+      default = if config.ghaf.profiles.graphics.compositor == "cosmic" then "vulkan" else "gles2";
       description = ''
         Which wlroots renderer to use.
 
@@ -109,6 +112,7 @@ in
 
     ghaf.graphics = {
       labwc.enable = cfg.compositor == "labwc";
+      cosmic.enable = cfg.compositor == "cosmic";
     };
   };
 }
