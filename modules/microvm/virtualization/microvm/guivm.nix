@@ -10,9 +10,7 @@
 let
   vmName = "gui-vm";
   inherit (import ../../../../lib/launcher.nix { inherit pkgs lib; }) rmDesktopEntries;
-  ghaf-powercontrol = pkgs.callPackage ../../../../packages/ghaf-powercontrol {
-    ghafConfig = config.ghaf;
-  };
+  ghaf-powercontrol = pkgs.ghaf-powercontrol.override { ghafConfig = config.ghaf; };
   guivmBaseConfiguration = {
     imports = [
       inputs.nixos-cosmic.nixosModules.default
@@ -281,6 +279,8 @@ let
               # GITHUB App Client ID for bug reporting login
               GITHUB_CLIENT_ID = "178c6fc778ccc68e1d6a";
             };
+            # TODO: Remove unnecessary cosmic packages
+            cosmic.excludePackages = [ ];
           };
 
           time.timeZone = config.time.timeZone;

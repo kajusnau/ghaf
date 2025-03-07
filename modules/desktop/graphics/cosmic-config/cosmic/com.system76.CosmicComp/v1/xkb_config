@@ -1,0 +1,10 @@
+(
+    rules: "",
+    model: "pc104",
+    layout: "us,ara,fi",
+    variant: ",,",
+    options: Some("grp:alt_shift_toggle"),
+    repeat_delay: 600,
+    repeat_rate: 25,
+)
+
