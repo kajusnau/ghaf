@@ -32,48 +32,6 @@ let
     '';
   };
 
-  cosmicOverrides = [
-    # Add DBUS proxy socket for audio, network, and bluetooth applets
-    (pkgs.cosmic-applets.overrideAttrs (oldAttrs: {
-      postInstall =
-        oldAttrs.postInstall or ""
-        + ''
-          sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
-          sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
-          sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
-        '';
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-settings/blob/master/cosmic-settings/Cargo.toml
-    # Disable Settings app pages
-    # Currently disabled features: page-users, page-power, page-sound.
-    (pkgs.cosmic-settings.overrideAttrs (oldAttrs: {
-      cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-        "--no-default-features"
-        "--features"
-        "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
-      ];
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-greeter/blob/master/Cargo.toml
-    # Disable cosmic-greeter features
-    # Currently disabled features: networkmanager.
-    (pkgs.cosmic-greeter.overrideAttrs (oldAttrs: {
-      cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-        "--no-default-features"
-        "--features"
-        "logind,upower"
-      ];
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-session/blob/master/Cargo.toml
-    # Disable cosmic-session features
-    # Currently disabled features: dconf profile installation.
-    (pkgs.cosmic-session.overrideAttrs (_oldAttrs: {
-      postInstall = "";
-    }))
-  ];
-
   # Change papirus folder icons to grey
   papirus-icon-theme-grey = pkgs.papirus-icon-theme.override {
     color = "grey";
@@ -84,6 +42,7 @@ let
     version = "0.1";
 
     phases = [
+      "unpackPhase"
       "installPhase"
       "postInstall"
     ];
@@ -92,18 +51,24 @@ let
 
     nativeBuildInputs = [ pkgs.yq-go ];
 
-    installPhase = ''
-      mkdir -p $out/share/cosmic
+    unpackPhase = ''
+      mkdir -p cosmic-unpacked
 
       # Process the YAML configuration
       for entry in $(yq e 'keys | .[]' $src/cosmic.config.yaml); do
-        mkdir -p "$out/share/cosmic/$entry/v1"
+        mkdir -p "cosmic-unpacked/$entry/v1"
 
         for subentry in $(yq e ".\"$entry\" | keys | .[]" "$src/cosmic.config.yaml"); do
           content=$(yq e --unwrapScalar=false ".\"$entry\".\"$subentry\"" $src/cosmic.config.yaml | grep -vE '^\s*\|')
-          echo -ne "$content" > "$out/share/cosmic/$entry/v1/$subentry"
+          echo -ne "$content" > "cosmic-unpacked/$entry/v1/$subentry"
         done
       done
+    '';
+
+    installPhase = ''
+      mkdir -p $out/share/cosmic
+      cp -rf cosmic-unpacked/* $out/share/cosmic/
+      rm -rf cosmic-unpacked
     '';
 
     postInstall = ''
@@ -153,6 +118,51 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    nixpkgs.overlays = [
+      (_final: prev: {
+        # Add DBUS proxy socket for audio, network, and bluetooth applets
+        cosmic-applets = prev.cosmic-applets.overrideAttrs (oldAttrs: {
+          postInstall =
+            oldAttrs.postInstall or ""
+            + ''
+              sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
+              sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
+              sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
+            '';
+        });
+
+        # Ref. https://github.com/pop-os/cosmic-settings/blob/master/cosmic-settings/Cargo.toml
+        # Disable Settings app pages
+        # Currently disabled features: page-users, page-power, page-sound.
+        cosmic-settings = prev.cosmic-settings.overrideAttrs (oldAttrs: {
+          cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
+            "--no-default-features"
+            "--features"
+            "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
+          ];
+        });
+
+        # Ref. https://github.com/pop-os/cosmic-greeter/blob/master/Cargo.toml
+        # Disable cosmic-greeter features
+        # Currently disabled features: networkmanager.
+        cosmic-greeter = prev.cosmic-greeter.overrideAttrs (oldAttrs: {
+          cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
+            "--no-default-features"
+            "--features"
+            "logind,upower"
+          ];
+        });
+
+        # Ref. https://github.com/pop-os/cosmic-session/blob/master/Cargo.toml
+        # Change the cosmic-session DCONF_PROFILE var to cosmic-ghaf - our own profile
+        cosmic-session = prev.cosmic-session.overrideAttrs (oldAttrs: {
+          justFlags = builtins.map (
+            flag: if flag == "cosmic" then "cosmic-ghaf" else flag
+          ) oldAttrs.justFlags;
+        });
+      })
+    ];
+
     # Login is handled by cosmic-greeter
     ghaf.graphics.login-manager.enable = false;
 
@@ -166,7 +176,6 @@ in
           ghaf-cosmic-config
           (import ./launchers-pkg.nix { inherit pkgs config; })
         ]
-        ++ cosmicOverrides
         ++ (rmDesktopEntries [ ]);
       sessionVariables = {
         XDG_CONFIG_HOME = "$HOME/.config";
@@ -226,6 +235,9 @@ in
     };
 
     services = {
+      desktopManager.cosmic.enable = true;
+      displayManager.cosmic-greeter.enable = true;
+
       greetd = {
         enable = true;
         settings.default_session =
@@ -357,11 +369,10 @@ in
       wantedBy = [ "cosmic-session.target" ];
     };
 
-    # Fails to replace cosmic dconf profile
-    # TODO: Investigate further
+    # cosmic-ghaf - our own cosmic dconf profile
     programs.dconf = {
       enable = true;
-      profiles.cosmic = {
+      profiles.cosmic-ghaf = {
         databases = [
           {
             lockAll = false;
@@ -371,6 +382,10 @@ in
                 cursor-theme = "Pop";
                 icon-theme = "Papirus";
                 clock-format = "24h";
+              };
+              "org/gnome/nm-applet" = {
+                disable-connected-notifications = true;
+                disable-disconnected-notifications = true;
               };
             };
           }
