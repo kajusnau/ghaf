@@ -111,6 +111,7 @@ let
     gtk-xft-hintstyle=hintslight
     gtk-xft-rgba=rgb
   '';
+
 in
 {
   options.ghaf.graphics.cosmic = {
@@ -119,48 +120,78 @@ in
 
   config = lib.mkIf cfg.enable {
     nixpkgs.overlays = [
-      (_final: prev: {
-        # Add DBUS proxy socket for audio, network, and bluetooth applets
-        cosmic-applets = prev.cosmic-applets.overrideAttrs (oldAttrs: {
-          postInstall =
-            oldAttrs.postInstall or ""
-            + ''
-              sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
-              sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
-              sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
-            '';
-        });
-
-        # Ref. https://github.com/pop-os/cosmic-settings/blob/master/cosmic-settings/Cargo.toml
-        # Disable Settings app pages
-        # Currently disabled features: page-users, page-power, page-sound.
-        cosmic-settings = prev.cosmic-settings.overrideAttrs (oldAttrs: {
-          cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-            "--no-default-features"
-            "--features"
-            "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
+      (
+        _final: prev:
+        let
+          cosmicPackagesToOverride = [
+            "cosmic-settings-daemon"
+            "cosmic-settings"
+            "cosmic-applets"
+            "cosmic-bg"
+            "cosmic-panel"
+            "cosmic-osd"
+            "cosmic-wallpapers"
+            "cosmic-workspaces-epoch"
           ];
-        });
+          # Automatically override all cosmic-* packages
+          overriddenCosmicPackages = builtins.listToAttrs (
+            builtins.map (pkg: {
+              name = pkg;
+              value = prev.${pkg}.overrideAttrs (oldAttrs: {
+                postFixup =
+                  (oldAttrs.postFixup or "")
+                  + ''
+                    if [ -d $out/share/cosmic ]; then
+                      cp -ru ${ghaf-cosmic-config}/share/cosmic/* $out/share/cosmic/
+                    fi
+                  '';
+              });
+            }) (builtins.filter (p: builtins.elem p cosmicPackagesToOverride) (builtins.attrNames prev))
+          );
 
-        # Ref. https://github.com/pop-os/cosmic-greeter/blob/master/Cargo.toml
-        # Disable cosmic-greeter features
-        # Currently disabled features: networkmanager.
-        cosmic-greeter = prev.cosmic-greeter.overrideAttrs (oldAttrs: {
-          cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-            "--no-default-features"
-            "--features"
-            "logind,upower"
-          ];
-        });
+          # Manually defined specific overrides
+          specificCosmicPackages = {
+            # Add DBUS proxy socket for audio, network, and Bluetooth applets
+            cosmic-applets = prev.cosmic-applets.overrideAttrs (oldAttrs: {
+              postInstall =
+                oldAttrs.postInstall or ""
+                + ''
+                  sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
+                  sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
+                  sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
+                '';
+            });
 
-        # Ref. https://github.com/pop-os/cosmic-session/blob/master/Cargo.toml
-        # Change the cosmic-session DCONF_PROFILE var to cosmic-ghaf - our own profile
-        cosmic-session = prev.cosmic-session.overrideAttrs (oldAttrs: {
-          justFlags = builtins.map (
-            flag: if flag == "cosmic" then "cosmic-ghaf" else flag
-          ) oldAttrs.justFlags;
-        });
-      })
+            # Disable certain settings pages in cosmic-settings
+            cosmic-settings = prev.cosmic-settings.overrideAttrs (oldAttrs: {
+              cargoBuildFlags = (oldAttrs.cargoBuildFlags or [ ]) ++ [
+                "--no-default-features"
+                "--features"
+                "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
+              ];
+            });
+
+            # Disable network manager in cosmic-greeter
+            cosmic-greeter = prev.cosmic-greeter.overrideAttrs (oldAttrs: {
+              cargoBuildFlags = (oldAttrs.cargoBuildFlags or [ ]) ++ [
+                "--no-default-features"
+                "--features"
+                "logind,upower"
+              ];
+            });
+
+            # Change the cosmic-session DCONF_PROFILE var to cosmic-ghaf
+            cosmic-session = prev.cosmic-session.overrideAttrs (oldAttrs: {
+              justFlags = builtins.map (
+                flag: if flag == "cosmic" then "cosmic-ghaf" else flag
+              ) oldAttrs.justFlags;
+            });
+          };
+
+        in
+        # Merge both automatic and manually defined package overrides
+        overriddenCosmicPackages // specificCosmicPackages
+      )
     ];
 
     # Login is handled by cosmic-greeter
