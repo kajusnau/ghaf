@@ -73,7 +73,10 @@ let
 
     postInstall = ''
       substituteInPlace $out/share/cosmic/com.system76.CosmicBackground/v1/all \
-        --replace "None" "Path(\"${pkgs.ghaf-artwork}/ghaf-desert-sunset.jpg\")"
+      --replace-fail "None" "Path(\"${pkgs.ghaf-artwork}/ghaf-desert-sunset.jpg\")"
+      substituteInPlace $out/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions \
+      --replace-fail 'VolumeLower: ""' 'VolumeLower: "pamixer --unmute --decrease 5 && ${pkgs.pulseaudio}/bin/paplay ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/message.oga || true",' \
+      --replace-fail 'VolumeRaise: ""' 'VolumeRaise: "pamixer --unmute --increase 5 && ${pkgs.pulseaudio}/bin/paplay ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/message.oga || true",'
     '';
 
     meta = with lib; {
@@ -124,12 +127,25 @@ in
         _final: prev:
         let
           cosmicPackagesToOverride = [
-            "cosmic-settings-daemon"
-            "cosmic-settings"
             "cosmic-applets"
+            "cosmic-applibrary"
             "cosmic-bg"
-            "cosmic-panel"
+            "cosmic-comp"
+            "cosmic-edit"
+            "cosmic-files"
+            "cosmic-icons"
+            "cosmic-idle"
+            "cosmic-launcher"
+            "cosmic-notifications"
             "cosmic-osd"
+            "cosmic-panel"
+            "cosmic-player"
+            "cosmic-randr"
+            "cosmic-screenshot"
+            "cosmic-session"
+            "cosmic-settings"
+            "cosmic-settings-daemon"
+            "cosmic-term"
             "cosmic-wallpapers"
             "cosmic-workspaces-epoch"
           ];
@@ -189,7 +205,6 @@ in
           };
 
         in
-        # Merge both automatic and manually defined package overrides
         overriddenCosmicPackages // specificCosmicPackages
       )
     ];
