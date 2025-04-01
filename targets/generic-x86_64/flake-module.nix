@@ -9,7 +9,7 @@
   ...
 }:
 let
-  inherit (inputs) nixos-generators nixos-cosmic;
+  inherit (inputs) nixos-generators;
   name = "generic-x86_64";
   system = "x86_64-linux";
   generic-x86 =
@@ -41,7 +41,6 @@ let
       hostConfiguration = lib.nixosSystem {
         inherit system;
         modules = [
-          nixos-cosmic.nixosModules.default
           nixos-generators.nixosModules.raw-efi
           self.nixosModules.microvm
           self.nixosModules.hw-x86_64-generic

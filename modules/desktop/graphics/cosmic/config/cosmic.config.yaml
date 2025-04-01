@@ -285,9 +285,9 @@ com.system76.CosmicSettings.Shortcuts:
         /// Opens the system default terminal
         Terminal: "cosmic-term",
         /// Lowers the volume of the active output device
-        VolumeLower: "pamixer --unmute --decrease 5",
+        VolumeLower: "",
         /// Raises the volume of the active output device
-        VolumeRaise: "pamixer --unmute --increase 5",
+        VolumeRaise: "",
         /// Opens the system default web browser
         WebBrowser: "xdg-open http://",
         /// Opens the (alt+tab) window switcher

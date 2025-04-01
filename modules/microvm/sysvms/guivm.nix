@@ -15,7 +15,6 @@ let
     imports = [
       inputs.self.nixosModules.profiles
       inputs.self.nixosModules.givc
-      inputs.nixos-cosmic.nixosModules.default
       inputs.impermanence.nixosModules.impermanence
       inputs.self.nixosModules.vm-modules
 
@@ -161,9 +160,6 @@ let
                 esac
               '';
             };
-
-            desktopManager.cosmic.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
-            displayManager.cosmic-greeter.enable = config.ghaf.profiles.graphics.compositor == "cosmic";
 
             logind = {
               lidSwitch = "ignore";

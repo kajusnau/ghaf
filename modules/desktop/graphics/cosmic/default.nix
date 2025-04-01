@@ -9,9 +9,13 @@
 let
   cfg = config.ghaf.graphics.cosmic;
 
-  inherit (import ../../../lib/launcher.nix { inherit pkgs lib; }) rmDesktopEntries;
+  inherit (import ../../../../lib/launcher.nix { inherit pkgs lib; }) rmDesktopEntries;
 
   ghaf-powercontrol = pkgs.ghaf-powercontrol.override { ghafConfig = config.ghaf; };
+
+  ghaf-cosmic-config = import ./config/cosmic-config.nix {
+    inherit lib pkgs;
+  };
 
   autostart = pkgs.writeShellApplication {
     name = "autostart";
@@ -23,101 +27,15 @@ let
     ];
 
     text = ''
-      systemctl --user stop ghaf-session.target
-      systemctl --user start ghaf-session.target
-
       mkdir -p "$XDG_CONFIG_HOME/gtk-3.0" "$XDG_CONFIG_HOME/gtk-4.0"
       [ ! -f "$XDG_CONFIG_HOME/gtk-3.0/settings.ini" ] && echo -ne "${gtk-settings}" > "$XDG_CONFIG_HOME/gtk-3.0/settings.ini"
       [ ! -f "$XDG_CONFIG_HOME/gtk-4.0/settings.ini" ] && echo -ne "${gtk-settings}" > "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
     '';
   };
 
-  cosmicOverrides = [
-    # Add DBUS proxy socket for audio, network, and bluetooth applets
-    (pkgs.cosmic-applets.overrideAttrs (oldAttrs: {
-      postInstall =
-        oldAttrs.postInstall or ""
-        + ''
-          sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
-          sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
-          sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
-        '';
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-settings/blob/master/cosmic-settings/Cargo.toml
-    # Disable Settings app pages
-    # Currently disabled features: page-users, page-power, page-sound.
-    (pkgs.cosmic-settings.overrideAttrs (oldAttrs: {
-      cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-        "--no-default-features"
-        "--features"
-        "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
-      ];
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-greeter/blob/master/Cargo.toml
-    # Disable cosmic-greeter features
-    # Currently disabled features: networkmanager.
-    (pkgs.cosmic-greeter.overrideAttrs (oldAttrs: {
-      cargoBuildFlags = oldAttrs.cargoBuildFlags or [ ] ++ [
-        "--no-default-features"
-        "--features"
-        "logind,upower"
-      ];
-    }))
-
-    # Ref. https://github.com/pop-os/cosmic-session/blob/master/Cargo.toml
-    # Disable cosmic-session features
-    # Currently disabled features: dconf profile installation.
-    (pkgs.cosmic-session.overrideAttrs (_oldAttrs: {
-      postInstall = "";
-    }))
-  ];
-
   # Change papirus folder icons to grey
   papirus-icon-theme-grey = pkgs.papirus-icon-theme.override {
     color = "grey";
-  };
-
-  ghaf-cosmic-config = pkgs.stdenv.mkDerivation rec {
-    pname = "ghaf-cosmic-config";
-    version = "0.1";
-
-    phases = [
-      "installPhase"
-      "postInstall"
-    ];
-
-    src = ./cosmic-config;
-
-    nativeBuildInputs = [ pkgs.yq-go ];
-
-    installPhase = ''
-      mkdir -p $out/share/cosmic
-
-      # Process the YAML configuration
-      for entry in $(yq e 'keys | .[]' $src/cosmic.config.yaml); do
-        mkdir -p "$out/share/cosmic/$entry/v1"
-
-        for subentry in $(yq e ".\"$entry\" | keys | .[]" "$src/cosmic.config.yaml"); do
-          content=$(yq e --unwrapScalar=false ".\"$entry\".\"$subentry\"" $src/cosmic.config.yaml | grep -vE '^\s*\|')
-          echo -ne "$content" > "$out/share/cosmic/$entry/v1/$subentry"
-        done
-      done
-    '';
-
-    postInstall = ''
-      substituteInPlace $out/share/cosmic/com.system76.CosmicBackground/v1/all \
-        --replace "None" "Path(\"${pkgs.ghaf-artwork}/ghaf-desert-sunset.jpg\")"
-    '';
-
-    meta = with lib; {
-      description = "Installs default Ghaf COSMIC configuration";
-      platforms = [
-        "aarch64-linux"
-        "x86_64-linux"
-      ];
-    };
   };
 
   swayidleConfig = ''
@@ -146,6 +64,7 @@ let
     gtk-xft-hintstyle=hintslight
     gtk-xft-rgba=rgb
   '';
+
 in
 {
   options.ghaf.graphics.cosmic = {
@@ -153,6 +72,121 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    nixpkgs.overlays = [
+      (
+        _final: prev:
+        let
+          overrideDefaultConfigs = [
+            # "cosmic-applets"
+            "cosmic-applibrary"
+            "cosmic-bg"
+            "cosmic-comp"
+            "cosmic-edit"
+            "cosmic-files"
+            "cosmic-icons"
+            "cosmic-idle"
+            "cosmic-launcher"
+            "cosmic-notifications"
+            "cosmic-osd"
+            "cosmic-panel"
+            "cosmic-player"
+            "cosmic-randr"
+            "cosmic-screenshot"
+            # "cosmic-session"
+            # "cosmic-settings"
+            "cosmic-settings-daemon"
+            "cosmic-term"
+            "cosmic-wallpapers"
+            "cosmic-workspaces-epoch"
+          ];
+          # Override cosmic packages' default configs with our own
+          replacedConfigsPackages = builtins.listToAttrs (
+            builtins.map (pkg: {
+              name = pkg;
+              value = prev.${pkg}.overrideAttrs (oldAttrs: {
+                postFixup =
+                  oldAttrs.postFixup or ""
+                  + ''
+                    if [ -d "$out/share/cosmic" ]; then
+                      ${lib.getExe pkgs.rsync} -av --existing "${ghaf-cosmic-config}/share/cosmic/" "$out/share/cosmic/"
+                    fi
+                  '';
+              });
+            }) (builtins.filter (p: builtins.elem p overrideDefaultConfigs) (builtins.attrNames prev))
+          );
+
+          # Ghaf specific functionality overrides + default system configs
+          adjustedFunctionalityPackages = {
+            # Add DBUS proxy socket for audio, network, and Bluetooth applets
+            cosmic-applets = prev.cosmic-applets.overrideAttrs (oldAttrs: {
+              postInstall =
+                oldAttrs.postInstall or ""
+                + ''
+                  sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock cosmic-applet-network|' $out/share/applications/com.system76.CosmicAppletNetwork.desktop
+                  sed -i 's|^Exec=.*|Exec=env PULSE_SERVER="audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort}" DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-audio|' $out/share/applications/com.system76.CosmicAppletAudio.desktop
+                  sed -i 's|^Exec=.*|Exec=env DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_snd.sock cosmic-applet-bluetooth|' $out/share/applications/com.system76.CosmicAppletBluetooth.desktop
+                '';
+              postFixup =
+                oldAttrs.postFixup or ""
+                + ''
+                  if [ -d "$out/share/cosmic" ]; then
+                    ${lib.getExe pkgs.rsync} -av --existing "${ghaf-cosmic-config}/share/cosmic/" "$out/share/cosmic/"
+                  fi
+                '';
+            });
+
+            # Disable certain settings pages in cosmic-settings
+            cosmic-settings = prev.cosmic-settings.overrideAttrs (oldAttrs: {
+              cargoBuildFlags = (oldAttrs.cargoBuildFlags or [ ]) ++ [
+                "--no-default-features"
+                "--features"
+                "a11y,dbus-config,single-instance,wgpu,page-accessibility,page-about,page-bluetooth,page-date,page-default-apps,page-input,page-networking,page-region,page-window-management,page-workspaces,xdg-portal,wayland"
+              ];
+              postFixup =
+                oldAttrs.postFixup or ""
+                + ''
+                  if [ -d "$out/share/cosmic" ]; then
+                    ${lib.getExe pkgs.rsync} -av --existing "${ghaf-cosmic-config}/share/cosmic/" "$out/share/cosmic/"
+                  fi
+                '';
+            });
+
+            # Disable network manager in cosmic-greeter
+            cosmic-greeter = prev.cosmic-greeter.overrideAttrs (oldAttrs: {
+              cargoBuildFlags = (oldAttrs.cargoBuildFlags or [ ]) ++ [
+                "--no-default-features"
+                "--features"
+                "logind,upower"
+              ];
+              postFixup =
+                oldAttrs.postFixup or ""
+                + ''
+                  if [ -d "$out/share/cosmic" ]; then
+                    ${lib.getExe pkgs.rsync} -av --existing "${ghaf-cosmic-config}/share/cosmic/" "$out/share/cosmic/"
+                  fi
+                '';
+            });
+
+            # Change the cosmic-session DCONF_PROFILE var to cosmic-ghaf
+            cosmic-session = prev.cosmic-session.overrideAttrs (oldAttrs: {
+              justFlags = builtins.map (
+                flag: if flag == "cosmic" then "cosmic-ghaf" else flag
+              ) oldAttrs.justFlags;
+              postFixup =
+                oldAttrs.postFixup or ""
+                + ''
+                  if [ -d "$out/share/cosmic" ]; then
+                    ${lib.getExe pkgs.rsync} -av --existing "${ghaf-cosmic-config}/share/cosmic/" "$out/share/cosmic/"
+                  fi
+                '';
+            });
+          };
+
+        in
+        replacedConfigsPackages // adjustedFunctionalityPackages
+      )
+    ];
+
     # Login is handled by cosmic-greeter
     ghaf.graphics.login-manager.enable = false;
 
@@ -164,9 +198,8 @@ in
           adwaita-icon-theme
           pamixer
           ghaf-cosmic-config
-          (import ./launchers-pkg.nix { inherit pkgs config; })
+          (import ../launchers-pkg.nix { inherit pkgs config; })
         ]
-        ++ cosmicOverrides
         ++ (rmDesktopEntries [ ]);
       sessionVariables = {
         XDG_CONFIG_HOME = "$HOME/.config";
@@ -193,8 +226,6 @@ in
         #DESKTOP=Desktop
       '';
       etc."swayidle/config".text = swayidleConfig;
-      etc."gtk-3.0/settings.ini".text = gtk-settings;
-      etc."gtk-4.0/settings.ini".text = gtk-settings;
     };
 
     # Needed for the greeter to query systemd-homed users correctly
@@ -226,6 +257,9 @@ in
     };
 
     services = {
+      desktopManager.cosmic.enable = true;
+      displayManager.cosmic-greeter.enable = true;
+
       greetd = {
         enable = true;
         settings.default_session =
@@ -263,7 +297,7 @@ in
 
     systemd.user.services = {
       autostart = {
-        enable = false;
+        enable = true;
         description = "Ghaf autostart";
         serviceConfig.ExecStart = "${lib.getExe autostart}";
         partOf = [ "cosmic-session.target" ];
@@ -357,11 +391,10 @@ in
       wantedBy = [ "cosmic-session.target" ];
     };
 
-    # Fails to replace cosmic dconf profile
-    # TODO: Investigate further
+    # cosmic-ghaf - our own cosmic dconf profile
     programs.dconf = {
       enable = true;
-      profiles.cosmic = {
+      profiles.cosmic-ghaf = {
         databases = [
           {
             lockAll = false;
@@ -371,6 +404,10 @@ in
                 cursor-theme = "Pop";
                 icon-theme = "Papirus";
                 clock-format = "24h";
+              };
+              "org/gnome/nm-applet" = {
+                disable-connected-notifications = true;
+                disable-disconnected-notifications = true;
               };
             };
           }
