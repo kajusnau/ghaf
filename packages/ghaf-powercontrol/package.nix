@@ -15,6 +15,8 @@ in
 writeShellApplication {
   name = "ghaf-powercontrol";
 
+  bashOptions = [ ];
+
   runtimeInputs = [
     systemd
     wlopm

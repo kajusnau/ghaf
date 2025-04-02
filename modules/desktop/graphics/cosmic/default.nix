@@ -190,6 +190,9 @@ in
     # Login is handled by cosmic-greeter
     ghaf.graphics.login-manager.enable = false;
 
+    # Override logind power management with ghaf-powercontrol
+    ghaf.graphics.power-manager.enable = true;
+
     environment = {
       systemPackages =
         with pkgs;
@@ -198,6 +201,7 @@ in
           adwaita-icon-theme
           pamixer
           ghaf-cosmic-config
+          ddcutil
           (import ../launchers-pkg.nix { inherit pkgs config; })
         ]
         ++ (rmDesktopEntries [ ]);
@@ -300,8 +304,8 @@ in
         enable = true;
         description = "Ghaf autostart";
         serviceConfig.ExecStart = "${lib.getExe autostart}";
-        partOf = [ "cosmic-session.target" ];
-        wantedBy = [ "cosmic-session.target" ];
+        partOf = [ "ghaf-session.target" ];
+        wantedBy = [ "ghaf-session.target" ];
       };
 
       audio-control = {
@@ -315,8 +319,8 @@ in
             ${lib.getExe' pkgs.ghaf-audio-control "GhafAudioControlStandalone"} --pulseaudio_server=audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort} --deamon_mode=true --indicator_icon_name=adjustlevels
           '';
         };
-        partOf = [ "cosmic-session.target" ];
-        wantedBy = [ "cosmic-session.target" ];
+        partOf = [ "ghaf-session.target" ];
+        wantedBy = [ "ghaf-session.target" ];
       };
 
       # Disable XDG autostart nm-applet, replcae with our own service
@@ -336,8 +340,8 @@ in
             ${lib.getExe' pkgs.networkmanagerapplet "nm-applet"} --indicator
           '';
         };
-        partOf = [ "cosmic-session.target" ];
-        wantedBy = [ "cosmic-session.target" ];
+        partOf = [ "ghaf-session.target" ];
+        wantedBy = [ "ghaf-session.target" ];
       };
 
       # We use existing blueman services and create overrides for both
@@ -352,8 +356,8 @@ in
             "${lib.getExe pkgs.bt-launcher} applet"
           ];
         };
-        partOf = [ "cosmic-session.target" ];
-        wantedBy = [ "cosmic-session.target" ];
+        partOf = [ "ghaf-session.target" ];
+        wantedBy = [ "ghaf-session.target" ];
       };
 
       blueman-manager = {
