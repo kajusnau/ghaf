@@ -191,6 +191,8 @@ let
         <field content="output"  width="25%" />
       </fields>
     </windowSwitcher>
+    <touch deviceName="TOUCH DEVICE NAME DERIVED FROM libinput list-devices" mapToOutput="DELL MONITOR NAME (wlr-randr)" mouseEmulation="no"/>
+    <touch mapToOutput="DP-1" /> <!-- fallback for other touch devices -->
     </labwc_config>
   '';
 
@@ -303,7 +305,7 @@ let
       autostart
     ];
 
-    text = "labwc -C /etc/labwc -s labwc-autostart >/tmp/session.labwc.log 2>&1";
+    text = "labwc -d -C /etc/labwc -s labwc-autostart >/tmp/session.labwc.log 2>&1";
   };
 
   gtk-settings = ''
@@ -579,7 +581,10 @@ in
       "greetd/environments".text = lib.mkAfter "ghaf-session\n";
     };
 
-    environment.systemPackages = [ ghaf-session ];
+    environment.systemPackages = [
+      ghaf-session
+      pkgs.libinput
+    ];
 
     programs.dconf = {
       enable = true;
