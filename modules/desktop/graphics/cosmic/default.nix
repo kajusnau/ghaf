@@ -350,11 +350,9 @@ in
     # services.upower.enable = lib.mkForce false;
     services.pipewire.enable = lib.mkForce false;
     services.playerctld.enable = true;
-    # Fails to replace adwaita cursor with Pop/Cosmic
-    # TODO: Investigate further
     xdg.icons.fallbackCursorThemes = lib.mkDefault [
-      "Pop"
       "Cosmic"
+      "Pop"
       "Adwaita"
     ];
   };
