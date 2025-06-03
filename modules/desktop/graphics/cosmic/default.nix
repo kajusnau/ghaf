@@ -150,7 +150,7 @@ in
         GSETTINGS_SCHEMA_DIR = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas";
         # Enable zwlr_data_control_manager_v1 protocol for COSMIC Utilities - Clipboard Manager to work
         COSMIC_DATA_CONTROL_ENABLED = 1;
-        RUST_LOG = if config.ghaf.profiles.debug.enable then "debug" else "error";
+        RUST_LOG = if config.ghaf.profiles.debug.enable then "info" else "error";
       };
       etc."xdg/user-dirs.defaults".text = ''
         #DOWNLOAD=Downloads

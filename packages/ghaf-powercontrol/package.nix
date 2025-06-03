@@ -6,6 +6,7 @@
   systemd,
   wlopm,
   libnotify,
+  toybox,
   wayland-logout,
   givc-cli ? null,
   ghafConfig ? { },
@@ -24,6 +25,7 @@ writeShellApplication {
     wlopm
     wayland-logout
     libnotify
+    toybox
   ] ++ (lib.optional useGivc givc-cli);
 
   text = ''
@@ -82,6 +84,21 @@ writeShellApplication {
       return 1
     }
 
+    reset_xhci_controllers() {
+      # Find all USB controller PCI addresses
+      echo "Resetting USB controllers..."
+      local controllers
+      lspci -Dnmm | grep -i '0c03'
+      controllers=$(lspci -Dnmm | grep -i '0c03' | cut -f1 -d' ')
+      echo "Found USB controllers: $controllers"
+
+      for dev in $controllers; do
+        echo "Resetting USB controller at $dev"
+        echo -n "$dev" | tee /sys/bus/pci/drivers/xhci_hcd/unbind
+        echo -n "$dev" | tee /sys/bus/pci/drivers/xhci_hcd/bind
+      done
+    }
+
     case "$1" in
       reboot|poweroff)
         ${if useGivc then "givc-cli ${ghafConfig.givc.cliArgs}" else "systemctl"} "$1"
@@ -104,6 +121,9 @@ writeShellApplication {
             # Switch on display on wakeup
             echo "Wake up detected, turning on displays..."
             try_toggle_displays true || true
+
+            # This is a workaround for the issue where USB devices do not work after resume
+            ${lib.optionalString useGivc "reset_xhci_controllers || true"}
           ''
         else
           ''
