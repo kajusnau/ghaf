@@ -202,22 +202,19 @@ in
     ghaf.graphics.power-manager.enable = true;
 
     environment = {
-      systemPackages =
-        with pkgs;
-        [
-          papirus-icon-theme-grey
-          adwaita-icon-theme
-          ghaf-wallpapers
-          pamixer
-          (import ../launchers-pkg.nix { inherit pkgs config; })
-          # Nix's evaluation order installs ghaf-cosmic-config after cosmic tools.
-          # Installing it before the cosmic tools would result in its configuration being overridden
-          # by the default configurations of the cosmic tools.
-          # If this behavior changes in the future, overlays for the relevant cosmic packages
-          # must be added to nixpkgs.overlays to enforce the desired configuration precedence.
-          ghaf-cosmic-config
-        ]
-        ++ (rmDesktopEntries [ ]);
+      systemPackages = with pkgs; [
+        papirus-icon-theme-grey
+        adwaita-icon-theme
+        ghaf-wallpapers
+        pamixer
+        (import ../launchers-pkg.nix { inherit pkgs config; })
+        # Nix's evaluation order installs ghaf-cosmic-config after cosmic tools.
+        # Installing it before the cosmic tools would result in its configuration being overridden
+        # by the default configurations of the cosmic tools.
+        # If this behavior changes in the future, overlays for the relevant cosmic packages
+        # must be added to nixpkgs.overlays to enforce the desired configuration precedence.
+        ghaf-cosmic-config
+      ];
       sessionVariables = {
         XDG_CONFIG_HOME = "$HOME/.config";
         XDG_DATA_HOME = "$HOME/.local/share";
@@ -360,6 +357,7 @@ in
     security.rtkit.enable = lib.mkForce false;
     services.gnome.gnome-keyring.enable = lib.mkForce false;
     services.power-profiles-daemon.enable = lib.mkForce false;
+    services.orca.enable = lib.mkForce false;
 
     # Normally we wouldn't want pipewire running in the graphics profile,
     # but we add it here so cosmic-osd doesn't consume too much CPU
