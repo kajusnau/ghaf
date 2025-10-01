@@ -129,7 +129,9 @@ in
             debug "Launching Chrome..."
             "$CHROME_BIN" --enable-features=UseOzonePlatform \
               --ozone-platform=wayland \
+              --v 4 \
               --disable-gpu \
+              --enable-logging \
               ${config.ghaf.givc.idsExtraArgs} \
               --proxy-pac-url=${proxyPacUrl} "$@"
           '';

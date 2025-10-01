@@ -42,7 +42,11 @@
             # Launch the browser
             google-chrome-stable --enable-features=UseOzonePlatform \
               --ozone-platform=wayland \
+              --ozone-platform-hint=wayland \
+              --enable-unsafe-swiftshader \
               --disable-gpu \
+              --v 4 \
+              --enable-logging \
               ${config.ghaf.givc.idsExtraArgs} "$@"
           '';
         };
@@ -116,7 +120,6 @@
         ];
         # Enable WireGuard GUI
         ghaf.reference.services.wireguard-gui.enable = config.ghaf.reference.services.wireguard-gui;
-
       }
     ];
   };

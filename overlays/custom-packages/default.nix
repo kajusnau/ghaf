@@ -5,6 +5,7 @@
 # packages.
 #
 (final: prev: {
+  # google-chrome = import ./google-chrome { inherit prev; };
   element-desktop = import ./element-desktop { inherit prev; };
   gtklock = import ./gtklock { inherit prev; };
   labwc = import ./labwc { inherit prev; };
