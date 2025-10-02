@@ -12,6 +12,8 @@ let
     mkEnableOption
     mkOption
     types
+    getExe
+    getExe'
     ;
 
   cfg = config.ghaf.graphics.cosmic;
@@ -23,7 +25,7 @@ let
     inherit lib pkgs;
     secctx = cfg.securityContext;
     inherit (cfg) panelApplets;
-    extraShortcuts = lib.optionals cfg.screen-recorder.enable [
+    extraShortcuts = lib.optionals cfg.screenRecorder.enable [
       {
         modifiers = [
           "Ctrl"
@@ -44,7 +46,7 @@ let
       for dir in "''${gtk_dirs[@]}"; do
         mkdir -p "$XDG_CONFIG_HOME/$dir"
         settings="$XDG_CONFIG_HOME/$dir/settings.ini"
-        [ -f "$settings" ] || echo -ne "${gtk-settings}" > "$settings"
+        [ -f "$settings" ] || echo -ne "${gtkSettings}" > "$settings"
       done
 
       cosmic_conf="$XDG_CONFIG_HOME/cosmic/cosmic/com.system76.CosmicTk/v1"
@@ -103,20 +105,20 @@ let
 
   swayidleConfig = ''
     timeout ${
-      toString (builtins.floor (300 * 0.8))
+      toString (builtins.floor (cfg.idleManagement.duration * 0.8))
 
     } '${lib.optionalString graphicsProfileCfg.allowSuspend ''notify-send -a System -u normal -t 10000 -i system "Automatic suspend" "The system will suspend soon due to inactivity.";''} brightnessctl -q -s; brightnessctl -q -m | { IFS=',' read -r _ _ _ brightness _ && [ "''${brightness%\%}" -le 25 ] || brightnessctl -q set 25% ;}' resume "brightnessctl -q -r || brightnessctl -q set 100%"
-    timeout ${toString 300} "loginctl lock-session" resume "brightnessctl -q -r || brightnessctl -q set 100%"
+    timeout ${cfg.idleManagement.duration} "loginctl lock-session" resume "brightnessctl -q -r || brightnessctl -q set 100%"
     ${lib.optionalString graphicsProfileCfg.allowSuspend ''timeout ${
-      toString (builtins.floor (300 * 3))
+      toString (builtins.floor (cfg.idleManagement.duration * 3))
     } "systemctl suspend"''}
   '';
 
-  gtk-settings = ''
+  gtkSettings = ''
     [Settings]
     gtk-application-prefer-dark-theme=1
     gtk-icon-theme-name=Papirus
-    gtk-cursor-theme-name=Pop
+    gtk-cursor-theme-name=Cosmic
     gtk-cursor-theme-size=24
     gtk-button-images=1
     gtk-menu-images=1
@@ -127,11 +129,30 @@ let
     gtk-xft-hintstyle=hintslight
     gtk-xft-rgba=rgb
   '';
-
 in
 {
   options.ghaf.graphics.cosmic = {
     enable = mkEnableOption "cosmic";
+
+    idleManagement = {
+      enable = mkOption {
+        type = types.bool;
+        default = graphicsProfileCfg.idleManagement.enable;
+        defaultText = literalExpression "config.ghaf.profiles.graphics.idleManagement.enable";
+        description = ''
+          Wether to override cosmic-idle system idle management using swayidle.
+
+          When enabled, swayidle will handle automatic screen dimming, locking, and suspending.
+        '';
+      };
+      duration = mkOption {
+        type = types.int;
+        default = 300;
+        description = ''
+          Timeout for idle suspension in seconds.
+        '';
+      };
+    };
 
     securityContext = mkOption {
       type = types.submodule {
@@ -177,30 +198,14 @@ in
           left = lib.mkOption {
             description = "List of applets to show on the left side of the panel.";
             type = types.listOf types.str;
-            default = [
-              "com.system76.CosmicPanelAppButton"
-              "com.system76.CosmicPanelWorkspacesButton"
-            ];
           };
           center = lib.mkOption {
             description = "List of applets to show in the center of the panel.";
             type = types.listOf types.str;
-            default = [
-              "com.system76.CosmicAppletTime"
-              "com.system76.CosmicAppletNotifications"
-            ];
           };
           right = lib.mkOption {
             description = "List of applets to show on the right side of the panel.";
             type = types.listOf types.str;
-            default = [
-              "com.system76.CosmicAppletInputSources"
-              "com.system76.CosmicAppletStatusArea"
-              "com.system76.CosmicAppletTiling"
-              "com.system76.CosmicAppletAudio"
-              "com.system76.CosmicAppletBattery"
-              "com.system76.CosmicAppletPower"
-            ];
           };
         };
       };
@@ -243,7 +248,7 @@ in
       '';
     };
 
-    screen-recorder = {
+    screenRecorder = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -259,7 +264,7 @@ in
     ghaf.graphics.login-manager.enable = true;
     ghaf.graphics.login-manager.failLock.enable = true;
 
-    ghaf.graphics.screen-recorder.enable = cfg.screen-recorder.enable;
+    ghaf.graphics.screen-recorder.enable = cfg.screenRecorder.enable;
 
     environment = {
       systemPackages = with pkgs; [
@@ -282,14 +287,9 @@ in
         XDG_CACHE_HOME = "$HOME/.cache";
         XDG_PICTURES_DIR = "$HOME/Pictures";
         XDG_VIDEOS_DIR = "$HOME/Videos";
-        XCURSOR_THEME = "Pop";
+        XCURSOR_THEME = "Cosmic";
         XCURSOR_SIZE = 24;
-        GSETTINGS_SCHEMA_DIR = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas";
-        # Enable zwlr_data_control_manager_v1 protocol for COSMIC Utilities - Clipboard Manager to work
-        COSMIC_DATA_CONTROL_ENABLED = 1;
-        # 'info' logs are too verbose, even on debug builds
-        # RUST_LOG = if config.ghaf.profiles.debug.enable then "info" else "error";
-        RUST_LOG = "error";
+        RUST_LOG = "debug";
       }
       // lib.optionalAttrs (cfg.renderDevice != null) {
         COSMIC_RENDER_DEVICE = cfg.renderDevice;
@@ -336,9 +336,9 @@ in
 
     systemd.user.services = {
       autostart = {
-        enable = true;
+
         description = "Ghaf autostart";
-        serviceConfig.ExecStart = "${lib.getExe autostart}";
+        serviceConfig.ExecStart = "${getExe autostart}";
         partOf = [ "cosmic-session.target" ];
         wantedBy = [ "cosmic-session.target" ];
       };
@@ -351,7 +351,7 @@ in
           Restart = "always";
           RestartSec = "5";
           ExecStart = ''
-            ${lib.getExe' pkgs.ghaf-audio-control "GhafAudioControlStandalone"} --pulseaudio_server=audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort} --deamon_mode=true --indicator_icon_name=adjustlevels
+            ${getExe' pkgs.ghaf-audio-control "GhafAudioControlStandalone"} --pulseaudio_server=audio-vm:${toString config.ghaf.services.audio.pulseaudioTcpControlPort} --deamon_mode=true --indicator_icon_name=adjustlevels
           '';
         };
         partOf = [ "cosmic-session.target" ];
@@ -372,7 +372,7 @@ in
           RestartSec = "1";
           Environment = mkIf graphicsProfileCfg.networkManager.applet.useDbusProxy "DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/dbusproxy_net.sock";
           ExecStart = ''
-            ${lib.getExe' pkgs.networkmanagerapplet "nm-applet"} --indicator
+            ${getExe' pkgs.networkmanagerapplet "nm-applet"} --indicator
           '';
         };
         partOf = [ "cosmic-session.target" ];
@@ -411,7 +411,7 @@ in
         ];
         serviceConfig = {
           Type = "simple";
-          ExecStart = "${lib.getExe pkgs.swayidle} -w -C /etc/swayidle/config";
+          ExecStart = "${getExe pkgs.swayidle} -w -C /etc/swayidle/config";
         };
         partOf = [ "cosmic-session.target" ];
         wantedBy = [ "cosmic-session.target" ];
@@ -421,12 +421,12 @@ in
       # TODO: remove when upstream fixes the issue
       # ref https://github.com/pop-os/cosmic-osd/issues/70
       cosmic-cpu-watchdog = {
-        enable = true;
+
         description = "Ghaf COSMIC CPU usage watchdog";
 
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${lib.getExe cosmic-cpu-watchdog}";
+          ExecStart = "${getExe cosmic-cpu-watchdog}";
         };
 
         after = [ "cosmic-session.target" ];
@@ -435,7 +435,7 @@ in
     };
 
     systemd.user.targets.ghaf-session = {
-      enable = true;
+
       description = "Ghaf graphical session";
       bindsTo = [ "cosmic-session.target" ];
       after = [ "cosmic-session.target" ];
@@ -449,9 +449,9 @@ in
     hardware.bluetooth.enable = graphicsProfileCfg.bluetooth.enable;
     networking.networkmanager.enable = graphicsProfileCfg.networkManager.enable;
 
-    services.gvfs.enable = lib.mkForce false;
+    # services.gvfs.enable = lib.mkForce false;
     services.avahi.enable = lib.mkForce false;
-    services.gnome.gnome-keyring.enable = lib.mkForce false;
+    # services.gnome.gnome-keyring.enable = lib.mkForce false;
     services.power-profiles-daemon.enable = lib.mkForce false;
     # Fails to build in cross-compilation for Orins
     services.orca.enable = pkgs.stdenv.hostPlatform.isx86_64;
@@ -464,6 +464,6 @@ in
       pulse.enable = !graphicsProfileCfg.proxyAudio;
       jack.enable = false;
     };
-    services.playerctld.enable = true;
+    # services.playerctld.enable = true;
   };
 }

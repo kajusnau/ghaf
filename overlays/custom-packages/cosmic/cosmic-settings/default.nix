@@ -7,7 +7,6 @@
   cargoBuildNoDefaultFeatures = true;
   cargoBuildFeatures = [
     "a11y"
-    "dbus-config"
     "page-about"
     "page-accessibility"
     "page-date"
@@ -15,7 +14,7 @@
     "page-display"
     "page-input"
     "page-region"
-    # "page-power"
+    "page-power"
     # "page-sound"
     # "page-users"
     "page-legacy-applications"
