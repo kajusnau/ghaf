@@ -208,10 +208,10 @@ com.system76.CosmicSettings.Shortcuts:
         (modifiers: [Super, Ctrl, Alt], key: "j"): MoveToOutput(Up),
         (modifiers: [Super, Ctrl, Alt], key: "l"): MoveToOutput(Right),
 
-        (modifiers: [Super], key: "Period"): NextOutput,
-        (modifiers: [Super], key: "Comma"): PreviousOutput,
-        (modifiers: [Super, Shift], key: "Period"): MoveToNextOutput,
-        (modifiers: [Super, Shift], key: "Comma"): MoveToPreviousOutput,
+        (modifiers: [Super], key: "period"): NextOutput,
+        (modifiers: [Super], key: "comma"): PreviousOutput,
+        (modifiers: [Super, Shift], key: "period"): MoveToNextOutput,
+        (modifiers: [Super, Shift], key: "comma"): MoveToPreviousOutput,
 
         (modifiers: [Super], key: "Left"): Move(Left),
         (modifiers: [Super], key: "Right"): Move(Right),
