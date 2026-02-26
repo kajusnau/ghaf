@@ -31,6 +31,44 @@ let
     '';
   };
 
+  runAppCenterApp = pkgs.writeShellApplication {
+    name = "run-flatpak-app";
+    runtimeInputs = [
+      pkgs.flatpak
+      pkgs.systemd
+    ];
+    text = ''
+      export XDG_SESSION_TYPE="wayland"
+      export DISPLAY=":0"
+      export PATH=/run/wrappers/bin:/run/current-system/sw/bin
+
+      systemctl --user start run-xwayland
+      systemctl --user set-environment WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
+      systemctl --user restart xdg-desktop-portal-gtk.service
+
+      flatpak run "$@"
+    '';
+  };
+
+  createAppList = pkgs.writeShellApplication {
+    name = "create-flatpak-app-list";
+    text = ''
+      APP_DIR="/var/lib/flatpak/app"
+      OUTPUT_FILE="/home/appuser/Unsafe share/.apps"
+
+      # Ensure directory exists
+      if [[ ! -d "$APP_DIR" ]]; then
+          echo "Directory $APP_DIR does not exist."
+          exit 1
+      fi
+
+      # List only directories and write their names to the output file
+      find "$APP_DIR" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort > "$OUTPUT_FILE"
+
+      echo "App list written to $OUTPUT_FILE"
+    '';
+  };
+
   # XDG item for URL
   xdgUrlFlatpakItem = pkgs.makeDesktopItem {
     name = "ghaf-url-xdg-flatpak";
@@ -165,6 +203,14 @@ in
             icon = "rocs";
             exec = "run-flatpak";
           }
+          {
+            name = "flatpak-run";
+            desktopName = "Flatpak Run Template";
+            description = "Run Installed Flatpak Application";
+            givcArgs = [ "url" ];
+            exec = "${lib.getExe runAppCenterApp}";
+            noDisplay = true;
+          }
         ];
         extraModules = [
           {
@@ -247,21 +293,33 @@ in
             programs.dconf.enable = lib.mkDefault true;
 
             systemd = {
-              services.flatpak-repo = {
-                description = "Add Flathub system-wide Flatpak repository";
-                wantedBy = [ "multi-user.target" ];
-                after = [ "network-online.target" ];
-                requires = [ "network-online.target" ];
-                serviceConfig = {
-                  Type = "oneshot";
-                  Restart = "on-failure";
-                  RestartSec = "2s";
+              services = {
+                flatpak-repo = {
+                  description = "Add Flathub system-wide Flatpak repository";
+                  wantedBy = [ "multi-user.target" ];
+                  after = [ "network-online.target" ];
+                  requires = [ "network-online.target" ];
+                  serviceConfig = {
+                    Type = "oneshot";
+                    Restart = "on-failure";
+                    RestartSec = "2s";
+                  };
+                  path = [ pkgs.flatpak ];
+                  script = ''
+                    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+                    flatpak update --appstream --noninteractive
+                  '';
                 };
-                path = [ pkgs.flatpak ];
-                script = ''
-                  flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-                  flatpak update --appstream --noninteractive
-                '';
+                installed-apps = {
+                  description = "Update list of installed apps";
+                  serviceConfig.ExecStart = "${lib.getExe createAppList}";
+                };
+              };
+
+              paths.installed-apps = {
+                description = "Watch for flatpak app changes";
+                wantedBy = [ "multi-user.target" ];
+                pathConfig.PathModified = "/var/lib/flatpak/app";
               };
 
               user.services."run-xwayland" = {

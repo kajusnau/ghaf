@@ -16,6 +16,13 @@ let
     literalExpression
     ;
 
+  ghaf-usb-applet = pkgs.ghaf-usb-applet.overrideAttrs (oldAttrs: {
+    postPatch = oldAttrs.postPatch or "" + ''
+      substituteInPlace src/ghaf_usb_applet/applet.py \
+        --replace-fail "drive-removable-media-usb" "drive-harddisk-usb-symbolic"
+    '';
+  });
+
   cfg = config.ghaf.graphics.cosmic;
   graphicsProfileCfg = config.ghaf.profiles.graphics;
 
@@ -350,10 +357,10 @@ in
           Restart = "on-failure";
           RestartSec = "5";
           Path = [
-            "${pkgs.ghaf-usb-applet}/bin"
+            "${ghaf-usb-applet}/bin"
           ];
           ExecStart = ''
-            ${lib.getExe' pkgs.ghaf-usb-applet "usb_applet"}
+            ${lib.getExe' ghaf-usb-applet "usb_applet"}
           '';
         };
         partOf = [ "cosmic-session.target" ];
