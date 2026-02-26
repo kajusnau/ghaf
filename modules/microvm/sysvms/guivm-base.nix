@@ -334,6 +334,10 @@ in
         GIVC_HOST_KEY = "/run/givc/key.pem";
       }
     );
+    # Add flatpak desktop entries
+    profiles = [
+      "/Shares/'Unsafe flatpak-vm share'/.flatpak-share"
+    ];
   };
 
   # Allow runtime timezone changes via timedatectl/COSMIC settings.

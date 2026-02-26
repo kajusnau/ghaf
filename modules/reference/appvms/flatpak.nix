@@ -34,19 +34,45 @@ let
   runAppCenterApp = pkgs.writeShellApplication {
     name = "run-flatpak-app";
     runtimeInputs = [
-      pkgs.flatpak
       pkgs.systemd
+      pkgs.gnused
+      pkgs.flatpak
     ];
     text = ''
       export XDG_SESSION_TYPE="wayland"
       export DISPLAY=":0"
-      export PATH=/run/wrappers/bin:/run/current-system/sw/bin
+      export XDG_DATA_DIRS="$XDG_DATA_DIRS:/var/lib/flatpak/exports/share"
+      export PATH="$PATH:/var/lib/flatpak/exports/bin"
 
       systemctl --user start run-xwayland
       systemctl --user set-environment WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
       systemctl --user restart xdg-desktop-portal-gtk.service
 
-      flatpak run "$@"
+      FLATPAK_APPS="/var/lib/flatpak/exports/share/applications"
+      # GIVC does not support passing simple arguments to apps,
+      # so we pass a fake URL, which we then trim here
+      app="$1"
+      app="''${app#http://}"
+
+      desktop_file=$(find "$FLATPAK_APPS" -name "$app.desktop" 2>/dev/null | head -n 1)
+
+      if [[ -z "$desktop_file" ]]; then
+        echo "No .desktop file found for $app"
+        exit 1
+      fi
+
+      # Extract the Exec line, ignoring comments
+      exec_cmd=$(grep -E '^Exec=' "$desktop_file" | head -n 1 | cut -d'=' -f2-)
+      exec_cmd_clean=$(echo "$exec_cmd" | cut -d" " -f1-"$(echo "$exec_cmd" | tr ' ' '\n' | grep -nx "^$app$" | cut -d: -f1)")
+
+      if [[ -z "$exec_cmd_clean" ]]; then
+        echo "No Exec line found in $desktop_file"
+        exit 1
+      fi
+
+      # Run the command
+      echo "Running: $exec_cmd_clean"
+      eval "$exec_cmd_clean"
     '';
   };
 
@@ -55,6 +81,8 @@ let
     text = ''
       APP_DIR="/var/lib/flatpak/app"
       OUTPUT_FILE="/home/appuser/Unsafe share/.apps"
+      LINK_DIR="/home/appuser/Unsafe share/.flatpak-share/share/applications"
+      EXPORTS_DIR="/var/lib/flatpak/exports/share"
 
       # Ensure directory exists
       if [[ ! -d "$APP_DIR" ]]; then
@@ -66,6 +94,12 @@ let
       find "$APP_DIR" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | sort > "$OUTPUT_FILE"
 
       echo "App list written to $OUTPUT_FILE"
+
+      if [[ -L "$LINK_DIR" || -e "$LINK_DIR" ]]; then
+          rm -rf "/home/appuser/Unsafe share/.flatpak-share"
+      fi
+
+      cp -rL "$EXPORTS_DIR/applications" "/home/appuser/'Unsafe share'/.flatpak-share/share/applications" 2>/dev/null || true
     '';
   };
 
@@ -205,10 +239,13 @@ in
           }
           {
             name = "flatpak-run";
-            desktopName = "Flatpak Run Template";
-            description = "Run Installed Flatpak Application";
+            desktopName = "Flatpak Run";
+            description = "Run an installed Flatpak application by its app ID";
+            packages = [
+              runAppCenterApp
+            ];
             givcArgs = [ "url" ];
-            exec = "${lib.getExe runAppCenterApp}";
+            exec = "run-flatpak-app";
             noDisplay = true;
           }
         ];
@@ -312,6 +349,7 @@ in
                 };
                 installed-apps = {
                   description = "Update list of installed apps";
+                  wantedBy = [ "multi-user.target" ];
                   serviceConfig.ExecStart = "${lib.getExe createAppList}";
                 };
               };
