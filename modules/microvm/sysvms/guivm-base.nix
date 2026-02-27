@@ -336,7 +336,7 @@ in
     );
     # Add flatpak desktop entries
     profiles = [
-      "/Shares/'Unsafe flatpak-vm share'/.flatpak-share"
+      "/Shares/Unsafe flatpak-vm share/.flatpak-share"
     ];
   };
 

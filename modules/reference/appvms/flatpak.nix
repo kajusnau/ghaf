@@ -27,7 +27,7 @@ let
       systemctl --user set-environment WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
       systemctl --user restart xdg-desktop-portal-gtk.service
 
-      cosmic-store
+      RUST_LOG=info cosmic-store
     '';
   };
 
@@ -40,39 +40,20 @@ let
     ];
     text = ''
       export XDG_SESSION_TYPE="wayland"
+      export WAYLAND_DISPLAY="wayland-1"
       export DISPLAY=":0"
-      export XDG_DATA_DIRS="$XDG_DATA_DIRS:/var/lib/flatpak/exports/share"
-      export PATH="$PATH:/var/lib/flatpak/exports/bin"
+      export PATH=/run/wrappers/bin:/run/current-system/sw/bin
 
       systemctl --user start run-xwayland
       systemctl --user set-environment WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
       systemctl --user restart xdg-desktop-portal-gtk.service
-
-      FLATPAK_APPS="/var/lib/flatpak/exports/share/applications"
       # GIVC does not support passing simple arguments to apps,
       # so we pass a fake URL, which we then trim here
       app="$1"
       app="''${app#http://}"
 
-      desktop_file=$(find "$FLATPAK_APPS" -name "$app.desktop" 2>/dev/null | head -n 1)
-
-      if [[ -z "$desktop_file" ]]; then
-        echo "No .desktop file found for $app"
-        exit 1
-      fi
-
-      # Extract the Exec line, ignoring comments
-      exec_cmd=$(grep -E '^Exec=' "$desktop_file" | head -n 1 | cut -d'=' -f2-)
-      exec_cmd_clean=$(echo "$exec_cmd" | cut -d" " -f1-"$(echo "$exec_cmd" | tr ' ' '\n' | grep -nx "^$app$" | cut -d: -f1)")
-
-      if [[ -z "$exec_cmd_clean" ]]; then
-        echo "No Exec line found in $desktop_file"
-        exit 1
-      fi
-
-      # Run the command
-      echo "Running: $exec_cmd_clean"
-      eval "$exec_cmd_clean"
+      ${config.ghaf.givc.appPrefix}/run-waypipe \
+        ${lib.getExe pkgs.flatpak} run "$app"
     '';
   };
 
@@ -80,8 +61,9 @@ let
     name = "create-flatpak-app-list";
     text = ''
       APP_DIR="/var/lib/flatpak/app"
-      OUTPUT_FILE="/home/appuser/Unsafe share/.apps"
-      LINK_DIR="/home/appuser/Unsafe share/.flatpak-share/share/applications"
+      OUTPUT_FILE="/home/${config.ghaf.users.appUser.name}/Unsafe share/.apps"
+      UNSAFE_SHARE_DIR="/home/${config.ghaf.users.appUser.name}/Unsafe share/.flatpak-share"
+      DESKTOP_DIR="$UNSAFE_SHARE_DIR/share/applications"
       EXPORTS_DIR="/var/lib/flatpak/exports/share"
 
       # Ensure directory exists
@@ -95,11 +77,33 @@ let
 
       echo "App list written to $OUTPUT_FILE"
 
-      if [[ -L "$LINK_DIR" || -e "$LINK_DIR" ]]; then
-          rm -rf "/home/appuser/Unsafe share/.flatpak-share"
-      fi
+      rm -rf "$UNSAFE_SHARE_DIR"
+      mkdir -p "$UNSAFE_SHARE_DIR"
 
-      cp -rL "$EXPORTS_DIR/applications" "/home/appuser/'Unsafe share'/.flatpak-share/share/applications" 2>/dev/null || true
+      # Copy flatpak export shares to the Unsafe share,
+      # so gui-vm can see the .desktop files and icons for installed flatpak apps
+      cp -rL "$EXPORTS_DIR" "$UNSAFE_SHARE_DIR" \
+        && echo "Copied flatpak 'exports/share' to $UNSAFE_SHARE_DIR" \
+        || echo "Failed to copy flatpak desktop entries to $UNSAFE_SHARE_DIR"
+
+      # Fix desktop entry Exec fields to run from gui-vm
+      if [[ -d "$DESKTOP_DIR" ]]; then
+        for desktop in "$DESKTOP_DIR"/*.desktop; do
+          # Skip if no .desktop files exist
+          [[ -e "$desktop" ]] || continue
+
+          # Extract the base name (APP-ID) without .desktop
+          app_id="$(basename "$desktop" .desktop)"
+
+          # Replace the Exec line
+          # -i ensures in-place edit
+          # Only replace lines that start with Exec=
+          sed -i "s|^Exec=.*|Exec=ghaf-open flatpak-run -- http://$app_id|" "$desktop"
+        done
+        echo "Updated Exec lines in .desktop files under $DESKTOP_DIR"
+      else
+        echo "No desktop files found in $DESKTOP_DIR"
+      fi
     '';
   };
 
@@ -242,6 +246,7 @@ in
             desktopName = "Flatpak Run";
             description = "Run an installed Flatpak application by its app ID";
             packages = [
+              pkgs.flatpak
               runAppCenterApp
             ];
             givcArgs = [ "url" ];
