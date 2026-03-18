@@ -36,7 +36,7 @@ let
       echo "Waiting for user-session to be running..."
       state="inactive"
       while [[ "$state" != "active" ]]; do
-        state=$(systemctl --user is-active session.slice --machine="$USER_ID"@.host) || true
+        state=$(sudo -u "#$USER_ID" XDG_RUNTIME_DIR=/run/user/"$USER_ID" DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/"$USER_ID"/bus systemctl --user is-active session.slice) || true
         sleep 1
       done
       echo "User-session is active"
