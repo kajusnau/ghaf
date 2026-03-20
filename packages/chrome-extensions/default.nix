@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 {
   callPackage,
-  pkgs,
+  bash,
+  coreutils,
+  curlMinimal,
+  fetchurl,
+  gnugrep,
   google-chrome,
   jq,
   lib,
+  stdenv,
   stdenvNoCC,
   tinyxxd,
   unzip,
@@ -25,32 +30,52 @@ let
     stdenvNoCC.mkDerivation {
       inherit name version;
       pname = name;
-      src = pkgs.fetchurl {
-        name = "${name}-${version}.crx";
-        url =
-          if fixedVersion then
-            "https://f6.crx4chrome.com/crx.php?i=${id}&v=${version}"
-          else
-            "https://clients2.google.com/service/update2/crx?response=redirect"
-            + "&os=linux"
-            + "&prodchannel=stable"
-            + "&prodversion=${google-chrome.version}"
-            + "&acceptformat=crx3"
-            + "&x=id%3D${id}%26installsource%3Dondemand%26uc";
-        postFetch = ''
-          if [ ! -f "$out" ] || [ ! -s "$out" ]; then
-            echo "Extension (${id}) download failed - file is empty. Ensure destination URL is correct." >&2
-            exit 1
-          fi
-          # Check CRX header
-          if ! ${lib.getExe tinyxxd} -l 16 "$out" | grep -qiE '(Cr24|CrX3)'; then
-            echo "Extension (${id}) download failed - invalid CRX file (missing Cr24/CrX3 header)." >&2
-            exit 1
-          fi
-        '';
-        curlOptsList = [ "-L" ] ++ lib.optional fixedVersion [ "-A 'Mozilla/5.0'" ];
-        inherit hash;
-      };
+      src =
+        if fixedVersion then
+          builtins.derivation {
+            name = "${name}-${version}.crx";
+            inherit (stdenv.hostPlatform) system;
+            inherit
+              curlMinimal
+              gnugrep
+              coreutils
+              tinyxxd
+              ;
+            builder = "${bash}/bin/bash";
+            args = [
+              ./fetch-pinned-ext.sh
+              id
+              version
+            ];
+
+            outputHashMode = "flat";
+            outputHashAlgo = "sha256";
+            outputHash = hash;
+          }
+        else
+          fetchurl {
+            name = "${name}-${version}.crx";
+            url =
+              "https://clients2.google.com/service/update2/crx?response=redirect"
+              + "&os=linux"
+              + "&prodchannel=stable"
+              + "&prodversion=${google-chrome.version}"
+              + "&acceptformat=crx3"
+              + "&x=id%3D${id}%26installsource%3Dondemand%26uc";
+            curlOptsList = [ "-L" ];
+            postFetch = ''
+              if [ ! -f "$out" ] || [ ! -s "$out" ]; then
+                echo "Extension (${id}) download failed - file is empty. Ensure destination URL is correct." >&2
+                exit 1
+              fi
+              # Check CRX header
+              if ! ${lib.getExe tinyxxd} -l 16 "$out" | grep -qiE '(Cr24|CrX3)'; then
+                echo "Extension (${id}) download failed - invalid CRX file (missing Cr24/CrX3 header)." >&2
+                exit 1
+              fi
+            '';
+            inherit hash;
+          };
 
       nativeBuildInputs = [
         unzip
