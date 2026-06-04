@@ -52,6 +52,15 @@
       };
     };
 
+    # pam-any
+    # use testing branch with thread-safe rework
+    pam-any = {
+      url = "github:ChocolateLoverRaj/pam-any/testing";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+
     # For building and creating disk images and installers
     disko = {
       url = "github:nix-community/disko";

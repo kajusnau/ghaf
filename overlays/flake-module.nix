@@ -24,6 +24,7 @@
       inputs.gp-gui.overlays.default
       inputs.wireguard-gui.overlays.default
       inputs.vhotplug.overlays.default
+      (final: _: { pam-any = inputs.pam-any.packages.${final.stdenv.hostPlatform.system}.pam-any; })
     ];
   };
 }

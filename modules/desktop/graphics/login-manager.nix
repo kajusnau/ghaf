@@ -71,14 +71,24 @@ in
     )}";
 
     security.pam.services = {
+      fprint-only = {
+        text = ''
+          auth sufficient ${pkgs.fprintd}/lib/security/pam_fprintd.so maxtries=3 # fprintd (order 11400)
+        '';
+      };
+      homed-only = {
+        fprintAuth = false;
+        rules.auth.unix.settings.use_first_pass = !config.ghaf.services.sssd.enable;
+      };
       cosmic-greeter = {
-        rules = {
-          auth = {
-            systemd_home.order = 11399; # Re-order to allow either password _or_ fingerprint on lockscreen
-            unix.settings.use_first_pass = !config.ghaf.services.sssd.enable;
-            fprintd.args = [ "maxtries=3" ];
-          };
-        };
+        text = ''
+          # Account management
+          # acct_mgmt is already taken care of by homed-only at this point, so we just permit
+          account required ${pkgs.linux-pam}/lib/security/pam_permit.so
+
+          # Authentication management
+          auth sufficient ${pkgs.pam-any}/lib/libpam_any.so { "mode": "One", "modules": { "homed-only": "homed", "fprint-only": "fprintd" } } # pam_any (order 11200)
+        '';
       };
       greetd = {
         fprintAuth = false; # User needs to enter password to decrypt home on login
