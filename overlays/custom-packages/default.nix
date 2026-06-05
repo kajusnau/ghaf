@@ -20,6 +20,7 @@
   intel-gpu-tools = import ./intel-gpu-tools { inherit prev; };
   oculante = import ./oculante { inherit prev; };
   osquery-with-hostname = import ./osquery-with-hostname { inherit prev; };
+  pam-any = import ./pam-any { inherit prev; };
   spire = import ./spire { inherit prev; };
 })
 # keep-sorted end

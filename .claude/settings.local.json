@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nix-prefetch-url --unpack https://github.com/xapp-project/fingwit/archive/refs/tags/1.0.8.tar.gz)",
+      "Read(//nix/store/jbny9nif920z6gw38xj7i83386ckr4ac-1.0.8.tar.gz/**)",
+      "Bash(nix-instantiate --eval -E 'with import <nixpkgs> {}; python3Packages.python-pam.pname')",
+      "Bash(nix-instantiate --eval -E 'with import <nixpkgs> {}; python3Packages.pygobject3.pname')",
+      "Bash(nix-instantiate --eval -E 'with import <nixpkgs> {}; python3Packages.setproctitle.pname')",
+      "Bash(nix-instantiate --eval -E 'with import <nixpkgs> {}; python-pam.pname')",
+      "Bash(nix-instantiate --eval -E 'with import <nixpkgs> {}; pygobject3.pname')"
+    ]
+  }
+}

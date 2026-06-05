@@ -73,7 +73,7 @@ in
     security.pam.services = {
       fprint-only = {
         text = ''
-          auth sufficient ${pkgs.fprintd}/lib/security/pam_fprintd.so maxtries=3 # fprintd (order 11400)
+          auth sufficient ${pkgs.fprintd}/lib/security/pam_fprintd.so max-tries=3 timeout=-1
         '';
       };
       homed-only = {
@@ -83,11 +83,11 @@ in
       cosmic-greeter = {
         text = ''
           # Account management
-          # acct_mgmt is already taken care of by homed-only at this point, so we just permit
           account required ${pkgs.linux-pam}/lib/security/pam_permit.so
 
           # Authentication management
-          auth sufficient ${pkgs.pam-any}/lib/libpam_any.so { "mode": "One", "modules": { "homed-only": "homed", "fprint-only": "fprintd" } } # pam_any (order 11200)
+          auth sufficient ${pkgs.pam-any}/lib/libpam_any.so { "mode": "One", "modules": { "homed-only": "homed", "fprint-only": "fprintd" } }
+          auth required ${pkgs.linux-pam}/lib/security/pam_deny.so
         '';
       };
       greetd = {
@@ -96,7 +96,6 @@ in
           auth = {
             systemd_home.order = 11399; # Re-order to allow either password _or_ fingerprint on lockscreen
             unix.settings.use_first_pass = !config.ghaf.services.sssd.enable;
-            fprintd.args = [ "maxtries=3" ];
 
             # This should precede other auth rules e.g. pam_sss.so (pam module for SSSD)
             faillock_preauth = mkIf cfg.failLock.enable {

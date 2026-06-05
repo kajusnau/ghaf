@@ -8,6 +8,7 @@
     chrome-extensions = final.callPackage ./chrome-extensions { };
     dendrite-pinecone = final.callPackage ./pkgs-by-name/dendrite-pinecone/package.nix { };
     falcon-launcher = final.callPackage ./falcon-launcher/package.nix { };
+    fingwit = final.callPackage ./pkgs-by-name/fingwit/package.nix { };
     flash-script = final.callPackage ./pkgs-by-name/flash-script/package.nix { };
     fleet-desktop = final.callPackage ./pkgs-by-name/fleet-desktop/package.nix { };
     fleet-orbit = final.callPackage ./pkgs-by-name/fleet-orbit/package.nix { };
@@ -22,6 +23,7 @@
     hardware-scan = final.callPackage ./pkgs-by-name/hardware-scan/package.nix { };
     make-checks = final.callPackage ./pkgs-by-name/make-checks/package.nix { };
     memsocket = final.callPackage ./pkgs-by-name/memsocket/package.nix { };
+    pam_fprint_grosshack = final.callPackage ./pkgs-by-name/pam_fprint_grosshack/package.nix { };
     pci-binder = final.callPackage ./pkgs-by-name/pci-binder/package.nix { };
     rtl8126 = final.callPackage ./pkgs-by-name/rtl8126/package.nix { };
     update-docs-depends = final.callPackage ./pkgs-by-name/update-docs-depends/package.nix { };
