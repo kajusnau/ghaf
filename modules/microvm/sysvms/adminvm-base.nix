@@ -229,9 +229,13 @@ in
   // lib.optionalAttrs (globalConfig.storage.storeOnDisk or false) {
     storeOnDisk = true;
     storeDiskType = "erofs";
+    # Defaults: -zlz4hc (all kernels), -Eztailpacking (5.16+), -Efragments (6.1+)
+    # Setting storeDiskErofsFlags overrides the entire list; include defaults explicitly if needed.
     storeDiskErofsFlags = [
-      "-zlz4hc"
+      "-zzstd"
       "-Eztailpacking"
+      "-Efragments"
+      "-E48bit"
     ];
   };
 }
