@@ -32,11 +32,6 @@ let
           description = "Chip/SmartCard (e.g. YubiKey)";
         }
         {
-          interfaceClass = 8;
-          interfaceSubclass = 6;
-          description = "Mass Storage - SCSI (USB drives)";
-        }
-        {
           interfaceClass = 17;
           description = "USB-C alternate modes supported by device";
         }

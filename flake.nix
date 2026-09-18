@@ -86,7 +86,7 @@
 
     # A set of useful nix packages and utilities for ghaf
     ghafpkgs = {
-      url = "github:tiiuae/ghafpkgs";
+      url = "github:kajusnau/ghafpkgs/cosmic-usb-applet";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";

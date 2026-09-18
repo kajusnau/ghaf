@@ -382,15 +382,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1788285037,
-        "narHash": "sha256-jfJ/CHRoqIhtJvjcX95XYumwobWsESbMaxBW64ncP74=",
-        "owner": "tiiuae",
+        "lastModified": 1789730435,
+        "narHash": "sha256-1IlzrotrHs5yJE0FCHwMgxncyX5FEo6Xe06Fv6Mfud8=",
+        "owner": "kajusnau",
         "repo": "ghafpkgs",
-        "rev": "1488d02109f8e076dee49def0ad7719224075bd3",
+        "rev": "0a7d0f883824d700c500e7e94ff71c69f10bdb2c",
         "type": "github"
       },
       "original": {
-        "owner": "tiiuae",
+        "owner": "kajusnau",
+        "ref": "cosmic-usb-applet",
         "repo": "ghafpkgs",
         "type": "github"
       }

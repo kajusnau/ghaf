@@ -164,6 +164,24 @@ in
             ]
             ++ config.ghaf.reference.passthrough.usb.internalWebcams;
           }
+          {
+            description = "Mass Storage";
+            tag = "disk";
+            allowedVms = [
+              "gui-vm"
+              "business-vm"
+              "chrome-vm"
+              "comms-vm"
+              "flatpak-vm"
+            ];
+            allow = [
+              {
+                interfaceClass = 8;
+                interfaceSubclass = 6;
+                description = "Mass Storage - SCSI (USB drives)";
+              }
+            ];
+          }
         ];
       };
 
