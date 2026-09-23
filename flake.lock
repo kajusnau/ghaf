@@ -382,15 +382,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1790097162,
-        "narHash": "sha256-CRe+UvxqU17zCSZBNWy2732jyABgsFZ3+w83jRppf2Q=",
-        "owner": "tiiuae",
+        "lastModified": 1790156391,
+        "narHash": "sha256-psLLw9HY4KYF31agUbuBgDrKbh529WtL3hd5VLITlvM=",
+        "owner": "kajusnau",
         "repo": "ghafpkgs",
-        "rev": "b861128da0a7a4128a819fef031b518fffcf8fc9",
+        "rev": "98c75f6993fc793ac6bc27ae08286672bf76946d",
         "type": "github"
       },
       "original": {
-        "owner": "tiiuae",
+        "owner": "kajusnau",
+        "ref": "ghaf-setup-gui",
         "repo": "ghafpkgs",
         "type": "github"
       }
