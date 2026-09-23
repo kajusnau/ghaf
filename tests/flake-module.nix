@@ -19,6 +19,7 @@
         {
           installer = pkgs.callPackage ./installer { inherit self; };
           netboot-boot = pkgs.callPackage ./installer/netboot-boot.nix { inherit self; };
+          installer-gui-boot = pkgs.callPackage ./installer/gui-boot.nix { inherit self; };
           netboot-fetch = pkgs.callPackage ./installer/netboot-fetch.nix { inherit self; };
           netboot-server = pkgs.callPackage ./installer/netboot-server.nix { inherit self; };
           # Still disabled, but for one well-understood reason rather than two.
