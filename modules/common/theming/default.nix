@@ -306,6 +306,9 @@ in
           # the logo's opacity ("breathe") rather than spinning it.
           targets.plymouth.enable = false;
 
+          # Keep the kernel's default black console instead of base16 colours.
+          targets.console.enable = lib.mkDefault false;
+
           # qt5ct/qt6ct fail to cross-compile
           targets.qt.enable = !isCross;
         };
