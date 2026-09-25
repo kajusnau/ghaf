@@ -154,6 +154,11 @@ in
           `sudo ghaf-installer`; see `ghaf-installer -h`.
         '';
       };
+
+      # A live installer has no saved brightness; use the panel's full backlight.
+      udev.extraRules = ''
+        ACTION=="add", SUBSYSTEM=="backlight", RUN+="${pkgs.runtimeShell} -c 'cat /sys$devpath/max_brightness > /sys$devpath/brightness'"
+      '';
     };
 
     systemd.services = {
