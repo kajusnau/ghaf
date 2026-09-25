@@ -92,6 +92,11 @@ in
         enable = true;
         # Defaults to the COSMIC desktop being enabled; the installer GUI needs it without.
         cosmic.enable = true;
+        # Without it boot.nix falls back to the stock theme and its NixOS watermark.
+        plymouth = {
+          enable = true;
+          bootLabel = "Starting Ghaf installer...";
+        };
       };
       locales.enable = true;
       graphics.boot = {
@@ -108,7 +113,7 @@ in
     hardware.graphics.enable = true;
 
     boot = {
-      # Skip NixOS installer
+      # Boot straight through; hold Shift/Esc for the menu and its rescue options.
       loader.timeout = lib.mkForce 0;
 
       kernelPackages = pkgs.linuxPackages_latest;

@@ -55,7 +55,7 @@ let
       # add anything else there, or the netboot installer silently loses it.
       (import ./installer-common.nix { inherit self system; })
       (
-        { modulesPath, ... }:
+        { lib, modulesPath, ... }:
         {
           imports = [
             "${toString modulesPath}/installer/cd-dvd/installation-cd-minimal.nix"
@@ -66,7 +66,17 @@ let
             storeContents = [ ];
             contents = [ ];
             squashfsCompression = "zstd -Xcompression-level 3";
+            # makeBiosBootable stays on although Ghaf is UEFI-only: nixpkgs writes the
+            # partition table a UEFI USB boot needs only with the isolinux hybrid MBR.
+            appendToMenuLabel = "";
           };
+
+          # Names the (hidden) GRUB entry "Ghaf Installer"; its rescue options stay.
+          system.nixos = {
+            distroName = "Ghaf";
+            label = "Installer";
+          };
+          boot.loader.grub.memtest86.enable = lib.mkForce false;
 
           # The image rides along inside the ISO and is mounted at /iso.
           ghaf.installer.imageSource = "/iso/ghaf-image";
