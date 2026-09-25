@@ -76,7 +76,7 @@ let
           # The TUI cannot do anything until the image is reachable, so wait
           # for the network. Netboot only -- the ISO must not gain this, or it
           # stalls on machines with no cable attached.
-          systemd.services.ghaf-installer-tui = {
+          systemd.services.ghaf-installer = {
             wants = [ "network-online.target" ];
             after = [ "network-online.target" ];
           };

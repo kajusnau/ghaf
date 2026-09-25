@@ -70,7 +70,7 @@ pkgs.testers.nixosTest {
     machine.start()
 
     with subtest("the installer actually started"):
-        machine.wait_for_unit("ghaf-installer-tui.service", timeout=500)
+        machine.wait_for_unit("ghaf-installer.service", timeout=500)
 
     with subtest("cage came up, not the TUI fallback"):
         # cage must actually be running: without a DRM device the unit

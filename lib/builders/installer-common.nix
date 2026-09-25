@@ -144,14 +144,14 @@ in
         greetingLine = "<<< Welcome to the Ghaf installer >>>";
         helpLine = lib.mkAfter ''
 
-          To start the graphical installer, run
-          `sudo systemctl start ghaf-installer-tui`.
+          The Ghaf installer starts on its own at boot. To start it again, run
+          `sudo systemctl start ghaf-installer`; it is graphical where there
+          is a display, and falls back to the text installer otherwise.
 
-          To use the text installer instead, run
-          `sudo ghaf-installer-tui`.
+          To use the text installer directly, run `sudo ghaf-installer-tui`.
 
-          To install without prompts, run
-          `sudo ghaf-installer`; see `ghaf-installer -h`.
+          To install without prompts, run `sudo ghaf-installer`;
+          see `ghaf-installer -h` for its options.
         '';
       };
 
@@ -166,7 +166,7 @@ in
       sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
 
       # Autostart the installer on tty1, replacing the default getty.
-      ghaf-installer-tui = {
+      ghaf-installer = {
         description = "Ghaf Installer";
         after = [ "multi-user.target" ];
         wantedBy = [ "multi-user.target" ];

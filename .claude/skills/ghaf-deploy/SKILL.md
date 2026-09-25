@@ -182,7 +182,7 @@ with `ghaf.install_noreboot` to stay in the installer when you need to diagnose 
 rather than watch the evidence reboot away.
 
 The installer is reachable over ssh as **`nixos@<ip>`** with the builder key, with passwordless
-sudo. That is the honest completion check — `systemctl is-active ghaf-installer-tui.service`
+sudo. That is the honest completion check — `systemctl is-active ghaf-installer.service`
 and `/proc/cmdline` on the booted machine — rather than inferring success from server logs.
 
 If nothing appears in the server log, work outwards in this order: is the firewall open, did
