@@ -175,6 +175,8 @@ in
       # even if the desktop manager as a whole is not enabled.
       pathsToLink = [
         "/share/cosmic"
+        # ghaf-dark.ron/ghaf-light.ron, which the installer GUI builds its theme from.
+        "/share/cosmic-themes"
       ];
     };
   };
