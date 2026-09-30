@@ -14,7 +14,7 @@
 #
 # Hence the assertions below are deliberately about the *booted system*:
 #
-#   - ghaf-installer-tui.service is active   (only true if stage-2 was reached)
+#   - ghaf-installer.service is active       (only true if stage-2 was reached)
 #   - init= is on /proc/cmdline              (the specific regression)
 #   - ghaf.image_url= is on /proc/cmdline    (the installer knows where to fetch)
 #
@@ -79,7 +79,7 @@ pkgs.testers.nixosTest {
         # shell. Everything below is detail; this is the test.
         # Measured at 0.01 s once multi-user.target is up -- it is ordered after
         # it -- so this timeout is pure headroom.
-        machine.wait_for_unit("ghaf-installer-tui.service", timeout=120)
+        machine.wait_for_unit("ghaf-installer.service", timeout=120)
 
     with subtest("init= reached the kernel"):
         # The 2026-08-01 regression, stated directly.

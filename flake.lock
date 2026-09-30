@@ -382,11 +382,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790156391,
-        "narHash": "sha256-psLLw9HY4KYF31agUbuBgDrKbh529WtL3hd5VLITlvM=",
+        "lastModified": 1790684094,
+        "narHash": "sha256-cUvP14j7Rs6BD+bF71kyxUR3nj7xDx7mJkGeLKqKP+s=",
         "owner": "kajusnau",
         "repo": "ghafpkgs",
-        "rev": "98c75f6993fc793ac6bc27ae08286672bf76946d",
+        "rev": "840fae83183b356ea265f1878d54b0e29d6e7d3b",
         "type": "github"
       },
       "original": {

@@ -137,21 +137,25 @@ in
     networking = {
       hostName = "ghaf-installer";
       networkmanager.enable = true;
+
     };
 
     services = {
+      # DEBUG ONLY, do not commit: allow key-based root ssh.
+      openssh.enable = true;
+
       getty = {
         greetingLine = "<<< Welcome to the Ghaf installer >>>";
         helpLine = lib.mkAfter ''
 
-          To start the graphical installer, run
-          `sudo systemctl start ghaf-installer-tui`.
+          The Ghaf installer starts on its own at boot. To start it again, run
+          `sudo systemctl start ghaf-installer`; it is graphical where there
+          is a display, and falls back to the text installer otherwise.
 
-          To use the text installer instead, run
-          `sudo ghaf-installer-tui`.
+          To use the text installer directly, run `sudo ghaf-installer-tui`.
 
-          To install without prompts, run
-          `sudo ghaf-installer`; see `ghaf-installer -h`.
+          To install without prompts, run `sudo ghaf-installer`;
+          see `ghaf-installer -h` for its options.
         '';
       };
 
@@ -161,12 +165,17 @@ in
       '';
     };
 
+    # DEBUG ONLY, do not commit: allow key-based root ssh.
+    users.users.root.openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINlIpJ9Q1oW1KiFBa12N5K/ecGVeGSBbcD8M9ZjA0TYe kajus.naujokaitis@unikie.com"
+    ];
+
     systemd.services = {
       wpa_supplicant.wantedBy = lib.mkForce [ "multi-user.target" ];
       sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
 
       # Autostart the installer on tty1, replacing the default getty.
-      ghaf-installer-tui = {
+      ghaf-installer = {
         description = "Ghaf Installer";
         after = [ "multi-user.target" ];
         wantedBy = [ "multi-user.target" ];
@@ -199,13 +208,17 @@ in
               exit "''${PIPESTATUS[0]}"
             fi
             # Any card, not just card0: on hybrid graphics the usable device can be card1+.
+            # DEBUG ONLY, do not commit: copy the GUI attempt's stderr to the journal.
+            {
             ${pkgs.systemd}/bin/udevadm settle --timeout=5
+            ls -l /dev/dri >&2
             if ls /dev/dri/card* > /dev/null 2>&1; then
-              ${pkgs.cage}/bin/cage -- ${guiLauncher} && exit 0
-              echo "cage exited non-zero; falling back to the text installer." >&2
+              RUST_LOG=debug ${pkgs.cage}/bin/cage -D -- ${guiLauncher} && exit 0
+              echo "cage exited $?; falling back to the text installer." >&2
             else
               echo "No DRM device found; falling back to the text installer." >&2
             fi
+            } 2> >(${pkgs.coreutils}/bin/tee >(${pkgs.systemd}/bin/systemd-cat -t ghaf-installer-gui) >&2)
             exec ${self.packages.${system}.ghaf-installer-tui}/bin/ghaf-installer-tui
           '';
           ExecStartPre = [
