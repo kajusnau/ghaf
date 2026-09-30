@@ -74,6 +74,33 @@ let
     }
   );
 
+  # cage runs outputs at scale 1 and libcosmic ignores its own scale setting, so
+  # scale each output to keep at least 900 logical pixels of height.
+  guiLauncher = pkgs.writeShellScript "user-provision-gui-launcher" ''
+    ${pkgs.wlr-randr}/bin/wlr-randr --json |
+      ${pkgs.jq}/bin/jq -r '.[] | select(.enabled) | "\(.name) \(.modes[] | select(.current) | .height)"' |
+      while read -r name height; do
+        scale=$((height / 900))
+        ${pkgs.wlr-randr}/bin/wlr-randr --output "$name" --scale "$((scale > 1 ? scale : 1))"
+      done
+    exec ${pkgs.ghaf-setup}/bin/ghaf-user-setup-gui
+  '';
+
+  # The GUI where there is a display; the gum flow otherwise.
+  interactiveLauncher = pkgs.writeShellScript "user-provision-launcher" ''
+    if ls /dev/dri/card* > /dev/null 2>&1; then
+      # cage exits 0 when stopped by a signal whatever the wizard did, so
+      # trust only an account that now exists.
+      ${pkgs.cage}/bin/cage -- ${guiLauncher}
+      status=$?
+      if ls /var/lib/systemd/home/*.identity > /dev/null 2>&1; then
+        exit 0
+      fi
+      echo "cage exited $status without an account; falling back to the text setup." >&2
+    fi
+    exec ${getExe pkgs.user-provision}
+  '';
+
   # Deprovisioning script
   deprovisioningScript = pkgs.writeShellApplication {
     name = "user-deprovision";
@@ -318,6 +345,15 @@ in
         ]
         ++ optionals cfg.enableHomed [ "systemd-homed.service" ];
         wants = [ "network-online.target" ];
+        environment = optionalAttrs (cfg.enableHomed && !cfg.enableAD) {
+          # cage is a system service, not a login session: give it a socket dir of its own.
+          XDG_RUNTIME_DIR = "/run/ghaf-user-setup";
+          # A system service gets no XDG_DATA_DIRS; the GUI reads the Ghaf theme from here.
+          XDG_DATA_DIRS = "/run/current-system/sw/share";
+          # The GUI has no icon themes; without cursors the pointer cannot change shape.
+          XCURSOR_THEME = "Pop";
+          XCURSOR_PATH = "${pkgs.pop-icon-theme}/share/icons";
+        };
         serviceConfig = {
           Type = "oneshot";
           StandardInput = "tty";
@@ -329,9 +365,13 @@ in
           PrivateTmp = true;
           ExecCondition = "${getExe execConditionScript}";
           ExecStartPre = optionalString config.ghaf.graphics.boot.enable "${pkgs.systemd}/bin/systemctl stop plymouth-start.service";
-          ExecStart = "${getExe pkgs.user-provision}";
+          ExecStart =
+            if (cfg.enableHomed && !cfg.enableAD) then interactiveLauncher else "${getExe pkgs.user-provision}";
           Restart = "on-failure";
           RestartSec = "5s";
+        }
+        // optionalAttrs (cfg.enableHomed && !cfg.enableAD) {
+          RuntimeDirectory = "ghaf-user-setup";
         };
       };
 
