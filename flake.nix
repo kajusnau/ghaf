@@ -86,7 +86,7 @@
 
     # A set of useful nix packages and utilities for ghaf
     ghafpkgs = {
-      url = "github:kajusnau/ghafpkgs/ghaf-setup-gui";
+      url = "github:kajusnau/ghafpkgs/ghaf-setup-user";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
