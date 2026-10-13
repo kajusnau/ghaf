@@ -172,11 +172,7 @@ in
 
     fonts = {
       sansSerif = {
-        package = lib.mkOption {
-          type = lib.types.package;
-          default = pkgs.inter;
-          description = "Sans-serif font package";
-        };
+        package = lib.mkPackageOption pkgs "sans-serif font" { default = "inter"; };
         name = lib.mkOption {
           type = lib.types.str;
           default = "Inter";
@@ -208,11 +204,7 @@ in
       };
 
       emoji = {
-        package = lib.mkOption {
-          type = lib.types.package;
-          default = pkgs.noto-fonts-color-emoji;
-          description = "Emoji font package";
-        };
+        package = lib.mkPackageOption pkgs "emoji font" { default = "noto-fonts-color-emoji"; };
         name = lib.mkOption {
           type = lib.types.str;
           default = "Noto Color Emoji";
