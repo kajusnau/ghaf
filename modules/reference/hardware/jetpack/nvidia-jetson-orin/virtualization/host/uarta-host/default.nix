@@ -12,11 +12,8 @@ in
 {
   _file = ./default.nix;
 
-  options.ghaf.hardware.nvidia.passthroughs.host.uarta.enable = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Enable UARTA passthrough on Nvidia Orin host";
-  };
+  options.ghaf.hardware.nvidia.passthroughs.host.uarta.enable =
+    lib.mkEnableOption "UARTA passthrough on Nvidia Orin host";
 
   config = lib.mkIf cfg.enable {
     ghaf.hardware.nvidia.virtualization = {

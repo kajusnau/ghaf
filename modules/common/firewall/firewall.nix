@@ -298,10 +298,8 @@ in
 
   options.ghaf.firewall = {
 
-    enable = mkOption {
-      type = types.bool;
+    enable = mkEnableOption "the Ghaf firewall for virtual machines" // {
       default = true;
-      description = "Ghaf firewall for virtual machines";
     };
     chainNamePrefix = mkOption {
       type = types.str;

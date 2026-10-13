@@ -39,11 +39,8 @@ in
 {
   _file = ./default.nix;
 
-  options.ghaf.host.kernel.hardening.hypervisor.enable = lib.mkOption {
-    description = "Enable Hypervisor hardening feature";
-    type = lib.types.bool;
-    default = false;
-  };
+  options.ghaf.host.kernel.hardening.hypervisor.enable =
+    lib.mkEnableOption "the Hypervisor hardening feature";
   config = lib.mkIf hyp_cfg.enable {
     boot.kernelPackages = pkgs.linuxPackagesFor pkvmKernel;
     boot.kernelPatches = pkvm_patch;

@@ -42,11 +42,8 @@ in
 {
   _file = ./default.nix;
 
-  options.ghaf.hardware.nvidia.passthroughs.uarti_net_vm.enable = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Enable UARTI passthrough on Nvidia Orin to the Net-VM";
-  };
+  options.ghaf.hardware.nvidia.passthroughs.uarti_net_vm.enable =
+    lib.mkEnableOption "UARTI passthrough on Nvidia Orin to the Net-VM";
 
   config = lib.mkIf cfg.enable {
     services.udev.extraRules = ''

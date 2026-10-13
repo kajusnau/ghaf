@@ -35,11 +35,7 @@ in
   _file = ./default.nix;
 
   options.ghaf.hardware.nvidia.passthroughs.gpu_vm = {
-    enable = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = "Pass the Tegra234 GPU and engines through to gpu-vm on NVIDIA Orin AGX or NX";
-    };
+    enable = lib.mkEnableOption "passing the Tegra234 GPU and engines through to gpu-vm on NVIDIA Orin AGX or NX";
 
     containerRuntime = {
       enable = lib.mkEnableOption "Docker with NVIDIA CDI devices in gpu-vm";

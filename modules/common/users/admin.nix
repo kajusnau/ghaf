@@ -19,9 +19,7 @@ in
   _file = ./admin.nix;
 
   options.ghaf.users.admin = {
-    enable = mkOption {
-      description = "Enable the admin user account. Enabled by default.";
-      type = types.bool;
+    enable = mkEnableOption "the admin user account" // {
       default = true;
     };
     name = mkOption {

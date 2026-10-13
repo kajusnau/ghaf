@@ -58,10 +58,8 @@ in
     networkManager = {
       enable = mkEnableOption "NetworkManager on the system where graphics profile is applied";
       applet = {
-        enable = mkOption {
-          type = types.bool;
+        enable = mkEnableOption "the NetworkManager tray applet (nm-applet)" // {
           default = true;
-          description = "Enable the NetworkManager tray applet (nm-applet)";
         };
         useDbusProxy = mkOption {
           type = types.bool;
@@ -78,10 +76,8 @@ in
     bluetooth = {
       enable = mkEnableOption "support for Bluetooth on the system where graphics profile is applied";
       applet = {
-        enable = mkOption {
-          type = types.bool;
+        enable = mkEnableOption "the Blueman tray applet" // {
           default = true;
-          description = "Enable the Blueman tray applet";
         };
 
         useDbusProxy = mkOption {

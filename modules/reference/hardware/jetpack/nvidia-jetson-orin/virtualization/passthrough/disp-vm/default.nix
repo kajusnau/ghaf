@@ -97,11 +97,8 @@ in
 {
   _file = ./default.nix;
 
-  options.ghaf.hardware.nvidia.passthroughs.disp_vm.enable = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Pass the Tegra234 display path through to disp-vm on NVIDIA Orin AGX";
-  };
+  options.ghaf.hardware.nvidia.passthroughs.disp_vm.enable =
+    lib.mkEnableOption "passing the Tegra234 display path through to disp-vm on NVIDIA Orin AGX";
 
   config =
     assert lib.assertMsg _capOk

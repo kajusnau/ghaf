@@ -43,17 +43,9 @@ let
 in
 {
   options.ghaf.guest.kernel.hardening = {
-    enable = lib.mkOption {
-      description = "Enable Ghaf Guest hardening feature";
-      type = lib.types.bool;
-      default = false;
-    };
+    enable = lib.mkEnableOption "the Ghaf Guest hardening feature";
 
-    graphics.enable = lib.mkOption {
-      description = "Enable support for Graphics in the Ghaf Guest";
-      type = lib.types.bool;
-      default = false;
-    };
+    graphics.enable = lib.mkEnableOption "support for Graphics in the Ghaf Guest";
   };
 
   config = lib.mkIf pkgs.stdenv.hostPlatform.isx86_64 {

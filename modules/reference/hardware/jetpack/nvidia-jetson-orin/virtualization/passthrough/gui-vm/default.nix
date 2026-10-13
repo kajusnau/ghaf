@@ -34,11 +34,8 @@ in
 {
   _file = ./default.nix;
 
-  options.ghaf.hardware.nvidia.passthroughs.gui_vm.enable = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = "Pass the Tegra234 GPU, engines and display through to a single combined microvm, gui-vm, on NVIDIA Orin AGX";
-  };
+  options.ghaf.hardware.nvidia.passthroughs.gui_vm.enable =
+    lib.mkEnableOption "passing the Tegra234 GPU, engines and display through to a single combined microvm, gui-vm, on NVIDIA Orin AGX";
 
   config = lib.mkIf cfg.enable {
     ghaf.hardware.nvidia.virtualization.host.bpmp.enable = true;
