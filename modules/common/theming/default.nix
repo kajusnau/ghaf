@@ -242,7 +242,7 @@ in
 
       logo = lib.mkOption {
         description = "Logo to be used on the boot screen.";
-        type = with lib.types; either path package;
+        type = lib.types.either lib.types.path lib.types.package;
         defaultText = lib.literalMD "`ghaf.theming.logo`";
         default = cfg.logo;
       };

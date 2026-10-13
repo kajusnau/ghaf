@@ -6,7 +6,6 @@
   pkgs,
   ...
 }:
-with lib;
 let
   cfg = config.ghaf.security.spire.server;
   runtimeDataDir = "/run/spire-server";
@@ -23,11 +22,12 @@ let
   upstreamAgent = config.ghaf.security.spire.agents.upstream or { enable = false; };
   upstreamAgentServiceName = "spire-agent-upstream";
   getVMsByAttestation =
-    mode: builtins.attrNames (filterAttrs (_vm: cfg: (cfg.nodeAttestationMode == mode)) spireAgents);
+    mode:
+    builtins.attrNames (lib.filterAttrs (_vm: cfg: (cfg.nodeAttestationMode == mode)) spireAgents);
 
   x509popVMs = getVMsByAttestation "x509pop";
 
-  x509popPlugin = optionalString (builtins.length x509popVMs > 0) ''
+  x509popPlugin = lib.optionalString (builtins.length x509popVMs > 0) ''
     NodeAttestor "x509pop" {
       plugin_data {
         ca_bundle_path = "$CREDENTIALS_DIRECTORY/ca-cert.pem"
@@ -124,9 +124,9 @@ let
       tmp="$(mktemp -d)"
       trap 'rm -rf "$tmp"' EXIT
       timeout 5 openssl s_client -connect ${
-        escapeShellArg (
+        lib.escapeShellArg (
           (
-            if hasInfix ":" config.ghaf.common.spire.server.address then
+            if lib.hasInfix ":" config.ghaf.common.spire.server.address then
               "[${config.ghaf.common.spire.server.address}]"
             else
               config.ghaf.common.spire.server.address
@@ -145,7 +145,7 @@ let
         echo "spire-refresh-identity: server certificate chain is valid; no restart needed."
       fi
 
-      ${getExe spirePublishBundleApp}
+      ${lib.getExe spirePublishBundleApp}
     '';
   };
 
@@ -164,7 +164,7 @@ let
     name = "spire-server-upstream-workload";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
-      socket=${escapeShellArg upstreamAgent.socketPath}
+      socket=${lib.escapeShellArg upstreamAgent.socketPath}
       retry_interval=30
 
       probe_upstream_svid() {
@@ -173,7 +173,7 @@ let
         while true; do
           # This is a one-shot probe for the initial upstream agent integration.
           # SVID persistence and renewal await the final backend requirements.
-          if [ -S "$socket" ] && ${getExe' spire-package "spire-agent"} api fetch x509 \
+          if [ -S "$socket" ] && ${lib.getExe' spire-package "spire-agent"} api fetch x509 \
             -silent \
             -socketPath "$socket" \
             -timeout 5s >/dev/null 2>&1; then
@@ -195,22 +195,22 @@ in
   _file = ./server.nix;
 
   options.ghaf.security.spire.server = {
-    enable = mkEnableOption "SPIRE server";
+    enable = lib.mkEnableOption "SPIRE server";
 
-    logLevel = mkOption {
-      type = types.str;
+    logLevel = lib.mkOption {
+      type = lib.types.str;
       default = "INFO";
       description = "SPIRE server log level";
     };
 
-    trustBundlePath = mkOption {
-      type = types.path;
+    trustBundlePath = lib.mkOption {
+      type = lib.types.path;
       default = "/etc/common/spire/bundle.pem";
       description = "Path to the SPIRE trust bundle PEM file (used to verify the server during bootstrap)";
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     environment.systemPackages = [ spire-package ];
     environment.etc."spire/server.conf".text = serverConf;
     services.spire.server = {
@@ -256,19 +256,19 @@ in
           ];
 
           serviceConfig = {
-            RuntimeDirectory = mkForce "spire-server";
+            RuntimeDirectory = lib.mkForce "spire-server";
             RuntimeDirectoryPreserve = "restart";
-            StateDirectory = mkForce "spire-server";
+            StateDirectory = lib.mkForce "spire-server";
             ReadWritePaths = [
               "${dataDir}"
               "${runtimeDataDir}"
             ];
           }
-          // optionalAttrs upstreamAgent.enable {
-            ExecStartPost = getExe spireServerUpstreamWorkloadApp;
+          // lib.optionalAttrs upstreamAgent.enable {
+            ExecStartPost = lib.getExe spireServerUpstreamWorkloadApp;
             SupplementaryGroups = [ upstreamAgentServiceName ];
           }
-          // optionalAttrs (builtins.length x509popVMs > 0) {
+          // lib.optionalAttrs (builtins.length x509popVMs > 0) {
             LoadCredential = [
               "ca-cert.pem:${credSourceDir}/ca-cert.pem"
             ];
@@ -287,7 +287,7 @@ in
 
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = getExe spirePublishBundleApp;
+            ExecStart = lib.getExe spirePublishBundleApp;
             # Retry failures and refresh hourly so the file follows CA rotation.
             Restart = "on-failure";
             RestartSec = "30s";
@@ -310,7 +310,7 @@ in
 
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = getExe spireRefreshIdentityApp;
+            ExecStart = lib.getExe spireRefreshIdentityApp;
             ExecStartPost = "${pkgs.systemd}/bin/systemctl reset-failed spire-refresh-identity-after-time-sync.service";
             Restart = "on-failure";
             RestartSec = "5s";
@@ -325,7 +325,7 @@ in
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
-            ExecStart = getExe spireCreateWorkloadEntriesApp;
+            ExecStart = lib.getExe spireCreateWorkloadEntriesApp;
           };
         };
       };
