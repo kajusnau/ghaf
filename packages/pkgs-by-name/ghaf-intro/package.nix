@@ -4,11 +4,17 @@
 # Ghaf Introduction Website
 # Static HTML site explaining Ghaf's architecture and security model
 #
-{ stdenvNoCC }:
+{ lib, stdenvNoCC }:
 stdenvNoCC.mkDerivation {
   pname = "ghaf-intro";
   version = "1.0.0";
-  src = ./.;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./index.html
+      ./img
+    ];
+  };
 
   dontBuild = true;
 

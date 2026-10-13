@@ -6,13 +6,20 @@
 # so it's built here from hand-written PTX (vadd.ptx) driven by runner.c over the
 # Driver API. See runner.c for the self-contained/RPATH details.
 {
+  lib,
   stdenv,
   nvidia-jetpack,
 }:
 stdenv.mkDerivation {
   pname = "gpu-vm-load";
   version = "1.0";
-  src = ./.;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./runner.c
+      ./vadd.ptx
+    ];
+  };
 
   dontConfigure = true;
 

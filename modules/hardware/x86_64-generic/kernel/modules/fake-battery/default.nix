@@ -15,7 +15,13 @@ stdenv.mkDerivation {
   version = "0.1.0";
 
   # The source is this directory (contains fake_battery.c and Makefile)
-  src = ./.;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./Makefile
+      ./fake_battery.c
+    ];
+  };
 
   # Kernel exposes a list of build-time deps for external modules.
   nativeBuildInputs = [ kmod ] ++ kernel.moduleBuildDependencies;

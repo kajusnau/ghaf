@@ -187,7 +187,13 @@ pkgs.stdenv.mkDerivation {
     "postInstall"
   ];
 
-  src = ./.;
+  src = lib.fileset.toSource {
+
+    root = ./.;
+
+    fileset = ./cosmic-config.yaml;
+
+  };
 
   nativeBuildInputs = [
     pkgs.yq-go

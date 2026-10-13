@@ -6,13 +6,17 @@
 # flake's perSystem pkgs. A CUDA package there breaks x86_64 evaluation. Reach
 # this package through a JetPack-configured relative-path callPackage instead.
 {
+  lib,
   stdenv,
   nvidia-jetpack,
 }:
 stdenv.mkDerivation {
   pname = "gpu-vm-green-context-probe";
   version = "1.0";
-  src = ./.;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = ./runner.c;
+  };
 
   dontConfigure = true;
 
