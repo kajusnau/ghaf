@@ -29,7 +29,7 @@ in
           Type = "oneshot";
           RemainAfterExit = "yes";
           ExecStart = ''
-            ${pkgs.bash}/bin/bash -c "echo vfio-platform > /sys/bus/platform/devices/3100000.serial/driver_override"
+            ${lib.getExe pkgs.bash} -c "echo vfio-platform > /sys/bus/platform/devices/3100000.serial/driver_override"
           '';
         };
       };
@@ -42,7 +42,7 @@ in
           Type = "oneshot";
           RemainAfterExit = "yes";
           ExecStart = ''
-            ${pkgs.bash}/bin/bash -c "echo 3100000.serial > /sys/bus/platform/drivers/vfio-platform/bind"
+            ${lib.getExe pkgs.bash} -c "echo 3100000.serial > /sys/bus/platform/drivers/vfio-platform/bind"
           '';
         };
       };

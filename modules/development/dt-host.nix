@@ -32,7 +32,7 @@ in
         users = [ "ghaf" ];
         commands = [
           {
-            command = "${pkgs.efibootmgr}/bin/efibootmgr";
+            command = lib.getExe pkgs.efibootmgr;
             options = [ "NOPASSWD" ];
           }
           # Setting a BootNext you cannot act on is useless, so this is scoped

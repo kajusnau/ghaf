@@ -24,7 +24,7 @@
       "sysroot.mount"
       "systemd-veritysetup@nix-store.service"
     ];
-    serviceConfig.ExecStartPost = "${pkgs.cryptsetup}/bin/cryptsetup isLuks ${lib.escapeShellArg config.ghaf.storage.encryption.partitionDevice}";
+    serviceConfig.ExecStartPost = "${lib.getExe pkgs.cryptsetup} isLuks ${lib.escapeShellArg config.ghaf.storage.encryption.partitionDevice}";
   };
 
   # The store cannot appear until first-boot encryption has finished.

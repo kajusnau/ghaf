@@ -328,7 +328,7 @@ in
           TTYVHangup = true;
           PrivateTmp = true;
           ExecCondition = "${getExe execConditionScript}";
-          ExecStartPre = optionalString config.ghaf.graphics.boot.enable "${pkgs.systemd}/bin/systemctl stop plymouth-start.service";
+          ExecStartPre = optionalString config.ghaf.graphics.boot.enable "${lib.getExe' pkgs.systemd "systemctl"} stop plymouth-start.service";
           ExecStart = "${getExe pkgs.user-provision}";
           Restart = "on-failure";
           RestartSec = "5s";
@@ -354,7 +354,7 @@ in
           ExecCondition = "${getExe testExecConditionScript}";
           ExecStart = "${getExe pkgs.user-provision} --non-interactive --username ${testUserName} --realname \"${testUserRealName}\" --password \"${testUserPassword}\"";
           ExecStartPost = [
-            "${pkgs.systemd}/bin/systemctl stop user-provision-interactive"
+            "${lib.getExe' pkgs.systemd "systemctl"} stop user-provision-interactive"
           ];
         };
       };

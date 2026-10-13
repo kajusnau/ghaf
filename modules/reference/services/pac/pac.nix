@@ -142,7 +142,7 @@ in
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
           serviceConfig = {
-            ExecStart = "${pkgs.busybox}/bin/busybox httpd -f -p ${pacServerAddr} -h /etc/proxy";
+            ExecStart = "${lib.getExe pkgs.busybox} httpd -f -p ${pacServerAddr} -h /etc/proxy";
             # Ensure ghafFetchUrl starts after the network is up
             Type = "simple";
             # Restart policy on failure

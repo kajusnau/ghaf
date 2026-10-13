@@ -174,7 +174,7 @@ let
       _check_public_trust() {
         _trust_name="$1"
         _expected_digest="$2"
-        _actual_digest=$("${pkgs.pkgsBuildBuild.coreutils}/bin/sha256sum" "$GHAF_DEV_KEY_DIR/$_trust_name")
+        _actual_digest=$("${lib.getExe' pkgs.pkgsBuildBuild.coreutils "sha256sum"}" "$GHAF_DEV_KEY_DIR/$_trust_name")
         _actual_digest="''${_actual_digest%% *}"
         if [ -z "$_expected_digest" ] || [ "$_actual_digest" != "$_expected_digest" ]; then
           echo "ERROR: GHAF_DEV_KEY_DIR public trust does not match the trust embedded at image evaluation: $_trust_name" >&2
@@ -188,16 +188,16 @@ let
       _check_public_trust update.pub ${lib.escapeShellArg expectedUpdateDigest}
 
       _trust_check_dir=$(mktemp -d)
-      "${pkgs.pkgsBuildBuild.openssl}/bin/openssl" pkey \
+      "${lib.getExe pkgs.pkgsBuildBuild.openssl}" pkey \
         -in "$GHAF_DEV_KEY_DIR/db.key" -pubout -outform DER \
         -out "$_trust_check_dir/db-key.der"
-      "${pkgs.pkgsBuildBuild.openssl}/bin/openssl" x509 \
+      "${lib.getExe pkgs.pkgsBuildBuild.openssl}" x509 \
         -in "$GHAF_DEV_KEY_DIR/db.crt" -pubkey -noout \
         -out "$_trust_check_dir/db-cert.pem"
-      "${pkgs.pkgsBuildBuild.openssl}/bin/openssl" pkey \
+      "${lib.getExe pkgs.pkgsBuildBuild.openssl}" pkey \
         -pubin -in "$_trust_check_dir/db-cert.pem" -outform DER \
         -out "$_trust_check_dir/db-cert.der"
-      if ! "${pkgs.pkgsBuildBuild.diffutils}/bin/cmp" -s \
+      if ! "${lib.getExe' pkgs.pkgsBuildBuild.diffutils "cmp"}" -s \
         "$_trust_check_dir/db-key.der" "$_trust_check_dir/db-cert.der"; then
         echo "ERROR: GHAF_DEV_KEY_DIR private key does not match public trust: db.key/db.crt" >&2
         exit 1
@@ -244,7 +244,7 @@ let
       echo "Signing EFI binaries with $_sb_key_dir/db.crt ..."
       for _efi in "$_sign_dir"/*.efi; do
         echo "  Signing: $(basename "$_efi")"
-        "${pkgs.pkgsBuildBuild.sbsigntool}/bin/sbsign" \
+        "${lib.getExe' pkgs.pkgsBuildBuild.sbsigntool "sbsign"}" \
           --key "$_sb_key_dir/db.key" --cert "$_sb_key_dir/db.crt" \
           --output "$_efi" "$_efi"
       done
@@ -266,12 +266,12 @@ let
     fi
 
     # Create 512M FAT32 ESP image
-    "${pkgs.pkgsBuildBuild.dosfstools}/bin/mkfs.vfat" -F 32 -n ESP -C "$_esp" $((512 * 1024))
-    "${pkgs.pkgsBuildBuild.mtools}/bin/mmd" -i "$_esp" ::EFI
-    "${pkgs.pkgsBuildBuild.mtools}/bin/mmd" -i "$_esp" ::EFI/BOOT
-    "${pkgs.pkgsBuildBuild.mtools}/bin/mmd" -i "$_esp" ::EFI/Linux
-    "${pkgs.pkgsBuildBuild.mtools}/bin/mcopy" -i "$_esp" "$_sign_dir/BOOTAA64.efi" ::EFI/BOOT/BOOTAA64.efi
-    "${pkgs.pkgsBuildBuild.mtools}/bin/mcopy" -i "$_esp" "$_sign_dir/$_uki_name" "::EFI/Linux/$_uki_name"
+    "${lib.getExe' pkgs.pkgsBuildBuild.dosfstools "mkfs.vfat"}" -F 32 -n ESP -C "$_esp" $((512 * 1024))
+    "${lib.getExe' pkgs.pkgsBuildBuild.mtools "mmd"}" -i "$_esp" ::EFI
+    "${lib.getExe' pkgs.pkgsBuildBuild.mtools "mmd"}" -i "$_esp" ::EFI/BOOT
+    "${lib.getExe' pkgs.pkgsBuildBuild.mtools "mmd"}" -i "$_esp" ::EFI/Linux
+    "${lib.getExe' pkgs.pkgsBuildBuild.mtools "mcopy"}" -i "$_esp" "$_sign_dir/BOOTAA64.efi" ::EFI/BOOT/BOOTAA64.efi
+    "${lib.getExe' pkgs.pkgsBuildBuild.mtools "mcopy"}" -i "$_esp" "$_sign_dir/$_uki_name" "::EFI/Linux/$_uki_name"
     rm -rf "$_sign_dir"
     echo "ESP image built: $_esp"
 
@@ -293,8 +293,8 @@ let
         # Store exactly the printable passphrase bytes that an operator types.
         # A trailing newline would become part of a cryptsetup key file during
         # enrollment and make the printed value fail interactive recovery.
-        "${pkgs.pkgsBuildBuild.openssl}/bin/openssl" rand -base64 24 \
-          | "${pkgs.pkgsBuildBuild.coreutils}/bin/tr" -d '\n' > "$_recovery"
+        "${lib.getExe pkgs.pkgsBuildBuild.openssl}" rand -base64 24 \
+          | "${lib.getExe' pkgs.pkgsBuildBuild.coreutils "tr"}" -d '\n' > "$_recovery"
         chmod 0600 "$_recovery"
 
         ${lib.getExe rekeyVerityImage} "$_outer" "$_key_dir/manufacturer" "$_recovery"
@@ -304,7 +304,7 @@ let
     }
     # flash.sh -k APP looks for system.img relative to $WORKDIR
     ln -sf "$WORKDIR/bootloader/system.img" "$WORKDIR/system.img"
-    echo "APP image: $("${pkgs.pkgsBuildBuild.coreutils}/bin/stat" -c%s "$WORKDIR/bootloader/system.img") bytes"
+    echo "APP image: $("${lib.getExe' pkgs.pkgsBuildBuild.coreutils "stat"}" -c%s "$WORKDIR/bootloader/system.img") bytes"
 
     # Ensure all DTB variants in kernel/dtb/ have NixOS overlays applied.
     # NixOS only applies deviceTree.overlays to the DTB named in
@@ -321,7 +321,7 @@ let
     chmod -R u+w kernel/dtb/
     composed="kernel/dtb/${config.hardware.deviceTree.name}"
     # Replace the last 4-digit revision before -nv.dtb with a wildcard
-    dtb_glob="kernel/dtb/$(echo "${config.hardware.deviceTree.name}" | "${pkgs.pkgsBuildBuild.gnused}/bin/sed" 's/-[0-9]\{4\}-nv\.dtb$/-*-nv.dtb/')"
+    dtb_glob="kernel/dtb/$(echo "${config.hardware.deviceTree.name}" | "${lib.getExe pkgs.pkgsBuildBuild.gnused}" 's/-[0-9]\{4\}-nv\.dtb$/-*-nv.dtb/')"
     for variant in $dtb_glob; do
       if [ "$variant" != "$composed" ]; then
         echo "  $composed -> $(basename "$variant")"

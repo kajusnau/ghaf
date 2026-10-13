@@ -71,7 +71,7 @@ let
     app:
     app
     // {
-      exec = "${pkgs.givc-cli}/bin/givc-cli ${hostConfig.givc.cliArgs} start app --vm ${app.vm} ${
+      exec = "${lib.getExe' pkgs.givc-cli "givc-cli"} ${hostConfig.givc.cliArgs} start app --vm ${app.vm} ${
         lib.strings.toLower (lib.replaceStrings [ " " ] [ "-" ] app.desktopName)
       }";
     }

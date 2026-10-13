@@ -115,11 +115,11 @@ in
           RemainAfterExit = "yes";
           ExecStartPre = map (
             d:
-            "${pkgs.bash}/bin/bash -c \"echo vfio-platform > /sys/bus/platform/devices/${d}/driver_override\""
+            "${lib.getExe pkgs.bash} -c \"echo vfio-platform > /sys/bus/platform/devices/${d}/driver_override\""
           ) allDevs;
           ExecStart = map (
             d:
-            "${pkgs.bash}/bin/bash -c '"
+            "${lib.getExe pkgs.bash} -c '"
             + "cur=$(basename \"$(readlink -f /sys/bus/platform/devices/${d}/driver 2>/dev/null)\"); "
             + "if [ \"$cur\" != vfio-platform ]; then echo ${d} > /sys/bus/platform/drivers/vfio-platform/bind; fi'"
           ) allDevs;

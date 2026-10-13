@@ -29,7 +29,7 @@ let
       }
       ''
         mkdir -p $out/bin
-        makeWrapper ${pkgs.kmscube}/bin/kmscube $out/bin/kmscube \
+        makeWrapper ${lib.getExe' pkgs.kmscube "kmscube"} $out/bin/kmscube \
           --set LD_PRELOAD ${gbm-nomod-shim}/lib/gbm-nomod-shim.so
       '';
   # Stable nvdisplay node; host1x also registers a connector-less DRM card.
@@ -50,9 +50,9 @@ in
     after = [ "systemd-udev-settle.service" ];
     wants = [ "systemd-udev-settle.service" ];
     serviceConfig = {
-      ExecStartPre = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 60); do [ -e ${displayCard} ] && exit 0; sleep 1; done; exit 1'";
+      ExecStartPre = "${lib.getExe pkgs.bash} -c 'for i in $(seq 1 60); do [ -e ${displayCard} ] && exit 0; sleep 1; done; exit 1'";
       # Keep stdin open; kmscube exits on /dev/null POLLHUP.
-      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.coreutils}/bin/sleep infinity | ${kmscube-wrapped}/bin/kmscube -D ${displayCard}'";
+      ExecStart = "${lib.getExe pkgs.bash} -c '${lib.getExe' pkgs.coreutils "sleep"} infinity | ${kmscube-wrapped}/bin/kmscube -D ${displayCard}'";
       Restart = "always";
       RestartSec = "2";
     };

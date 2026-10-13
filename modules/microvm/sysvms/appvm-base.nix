@@ -387,8 +387,8 @@ in
         enable = true;
         description = "CTAP Proxy";
         serviceConfig = {
-          ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p /var/log/qubes";
-          ExecStart = "${pkgs.qubes-ctap}/bin/qctap-proxy --qrexec ${
+          ExecStartPre = "${lib.getExe' pkgs.coreutils "mkdir"} -p /var/log/qubes";
+          ExecStart = "${lib.getExe pkgs.qubes-ctap} --qrexec ${
             pkgs.writeShellApplication {
               name = "qrexec-client-vm";
               runtimeInputs = [ pkgs.givc-cli ];

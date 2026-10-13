@@ -20,7 +20,7 @@ let
       systemd
     ];
     text = ''
-      bootctl=${pkgs.systemd}/bin/bootctl
+      bootctl=${lib.getExe' pkgs.systemd "bootctl"}
       bless_boot=${pkgs.systemd}/lib/systemd/systemd-bless-boot
       boot_status="$($bless_boot status 2>/dev/null || true)"
       current_stub=""

@@ -16,12 +16,12 @@ pkgs.testers.nixosTest {
       };
       systemd.services."microvm@net-vm".serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.coreutils}/bin/true";
+        ExecStart = lib.getExe' pkgs.coreutils "true";
         RemainAfterExit = true;
       };
       systemd.services.wait-for-login.serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.coreutils}/bin/sleep infinity";
+        ExecStart = "${lib.getExe' pkgs.coreutils "sleep"} infinity";
       };
       systemd.targets.system-login = {
         wantedBy = [ "microvms.target" ];

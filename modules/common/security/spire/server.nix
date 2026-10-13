@@ -229,7 +229,7 @@ in
         spire-server-setup =
           let
             setupScript = pkgs.writeShellScript "spire-agent-setup" ''
-              ${pkgs.coreutils}/bin/rm -f ${cfg.trustBundlePath}
+              ${lib.getExe' pkgs.coreutils "rm"} -f ${cfg.trustBundlePath}
             '';
           in
           {
@@ -311,7 +311,7 @@ in
           serviceConfig = {
             Type = "oneshot";
             ExecStart = lib.getExe spireRefreshIdentityApp;
-            ExecStartPost = "${pkgs.systemd}/bin/systemctl reset-failed spire-refresh-identity-after-time-sync.service";
+            ExecStartPost = "${lib.getExe' pkgs.systemd "systemctl"} reset-failed spire-refresh-identity-after-time-sync.service";
             Restart = "on-failure";
             RestartSec = "5s";
           };

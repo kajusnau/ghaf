@@ -359,7 +359,7 @@ in
             "-/var/log/journal"
             "-/run/log/journal"
           ];
-          ExecStart = "${pkgs.systemd}/bin/systemd-tmpfiles --create ${journalPermissions}";
+          ExecStart = "${lib.getExe' pkgs.systemd "systemd-tmpfiles"} --create ${journalPermissions}";
         };
       };
       systemd.services.logseald-producer = {
@@ -419,7 +419,7 @@ in
               "--tls-time-policy"
               cfg.tls.timePolicy
               "--journalctl"
-              "${pkgs.systemd}/bin/journalctl"
+              "${lib.getExe' pkgs.systemd "journalctl"}"
               "--block-records"
               (toString cfg.producer.blockRecords)
               "--block-interval"

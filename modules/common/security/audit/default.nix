@@ -125,7 +125,7 @@ in
               lib.concatStringsSep "\n" ([ "-D" ] ++ config.security.audit.rules)
             );
           in
-          lib.mkForce "${pkgs.audit}/bin/auditctl -R ${auditRulesFile}";
+          lib.mkForce "${lib.getExe' pkgs.audit "auditctl"} -R ${auditRulesFile}";
 
         # Let systemd use default ordering for audit-rules instead of early-boot
         unitConfig.DefaultDependencies = lib.mkForce true;
@@ -141,7 +141,7 @@ in
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${pkgs.runtimeShell} -c '${pkgs.coreutils}/bin/sleep 5; ${pkgs.audit}/bin/auditctl --signal resume'";
+          ExecStart = "${pkgs.runtimeShell} -c '${lib.getExe' pkgs.coreutils "sleep"} 5; ${lib.getExe' pkgs.audit "auditctl"} --signal resume'";
         };
       };
 
@@ -152,7 +152,7 @@ in
         wants = [ "auditd.service" ];
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${pkgs.audit}/bin/auditctl --signal rotate";
+          ExecStart = "${lib.getExe' pkgs.audit "auditctl"} --signal rotate";
         };
       };
 

@@ -431,7 +431,7 @@ in
             Type = "oneshot";
             ExecStart = lib.getExe reattestAgentsApp;
             # Harmless clock steps must not exhaust the default unit start limit.
-            ExecStartPost = "${pkgs.systemd}/bin/systemctl reset-failed spire-reattest-agents-after-time-sync.service";
+            ExecStartPost = "${lib.getExe' pkgs.systemd "systemctl"} reset-failed spire-reattest-agents-after-time-sync.service";
             TimeoutStartSec = "120s";
           };
         };

@@ -163,7 +163,7 @@ in
               serviceConfig = {
                 Type = "oneshot";
                 ExecStart = ''
-                  ${pkgs.wait-for-unit}/bin/wait-for-unit \
+                  ${lib.getExe pkgs.wait-for-unit} \
                   ${hosts.admin-vm.ipv4} 9001 \
                   gui-vm \
                   greetd.service \
@@ -184,7 +184,7 @@ in
               serviceConfig = {
                 Type = "oneshot";
                 ExecStart = ''
-                  ${pkgs.wait-for-unit}/bin/wait-for-unit \
+                  ${lib.getExe pkgs.wait-for-unit} \
                   ${hosts.admin-vm.ipv4} 9001 \
                   gui-vm \
                   user-login.service \

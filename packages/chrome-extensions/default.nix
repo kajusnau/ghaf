@@ -35,7 +35,7 @@ let
             inherit (pkgs.buildPackages) gnugrep;
             inherit (pkgs.buildPackages) coreutils;
             inherit (pkgs.buildPackages) tinyxxd;
-            builder = "${pkgs.buildPackages.bash}/bin/bash";
+            builder = lib.getExe pkgs.buildPackages.bash;
             args = [
               ./fetch-pinned-ext.sh
               id

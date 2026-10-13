@@ -41,7 +41,7 @@ in
 
         serviceConfig = {
           Type = "simple";
-          ExecStart = "${pkgs.gps-websock}/bin/gpswebsock";
+          ExecStart = lib.getExe pkgs.gps-websock;
           Restart = "on-failure";
           RestartSec = "2";
         };
@@ -53,7 +53,7 @@ in
         enable = true;
         serviceConfig = {
           Type = "simple";
-          ExecStart = "${pkgs.dendrite-pinecone}/bin/dendrite-demo-pinecone";
+          ExecStart = lib.getExe' pkgs.dendrite-pinecone "dendrite-demo-pinecone";
           Restart = "on-failure";
           RestartSec = "2";
         };

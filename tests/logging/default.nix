@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 pkgs.testers.nixosTest {
   name = "logging-recovery";
 
@@ -34,7 +34,7 @@ pkgs.testers.nixosTest {
             serviceConfig = {
               Type = "oneshot";
               RemainAfterExit = true;
-              ExecStart = "${pkgs.coreutils}/bin/true";
+              ExecStart = lib.getExe' pkgs.coreutils "true";
             };
           };
         })

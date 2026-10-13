@@ -36,7 +36,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         ExecStart = ''
-          ${pkgs.systemd}/bin/systemctl restart fprintd
+          ${lib.getExe' pkgs.systemd "systemctl"} restart fprintd
         '';
       };
     };

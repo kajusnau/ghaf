@@ -57,10 +57,10 @@ in
 
     # Prevent tty1 from also consuming evdev-delivered keystrokes.
     systemd.services.greetd.serviceConfig.ExecStartPre = [
-      "${pkgs.kbd}/bin/kbd_mode -f -d -C /dev/tty1"
+      "${lib.getExe' pkgs.kbd "kbd_mode"} -f -d -C /dev/tty1"
     ];
     systemd.services.greetd.serviceConfig.ExecStopPost = [
-      "${pkgs.kbd}/bin/kbd_mode -f -u -C /dev/tty1"
+      "${lib.getExe' pkgs.kbd "kbd_mode"} -f -u -C /dev/tty1"
     ];
     users.users.cosmic-greeter.extraGroups = [ "seat" ];
     users.users.ghaf.extraGroups = [

@@ -23,6 +23,7 @@
 # `-boot order=n` boots from it, and the iPXE option ROM drives the UEFI path.
 { pkgs, self }:
 let
+  inherit (pkgs) lib;
   inherit (self.inputs) nixpkgs;
   system = "x86_64-linux";
 
@@ -50,7 +51,7 @@ let
     }).package;
 
   startCommand = builtins.concatStringsSep " " [
-    "${pkgs.qemu_test}/bin/qemu-kvm"
+    "${lib.getExe pkgs.qemu_test}"
     "-cpu max"
     # The initrd is ~637 MiB and is resident, with the store unpacked alongside
     # it. Anything tight here fails as an opaque stage-1 OOM.

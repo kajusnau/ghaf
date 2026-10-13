@@ -15,7 +15,7 @@ let
     ;
 
   pkcs11-tool-optee = pkgs.writeShellScriptBin "pkcs11-tool-optee" ''
-    exec "${pkgs.opensc}/bin/pkcs11-tool" --module "${pkgs.nvidia-jetpack.opteeClient}/lib/libckteec.so" $@
+    exec "${lib.getExe' pkgs.opensc "pkcs11-tool"}" --module "${pkgs.nvidia-jetpack.opteeClient}/lib/libckteec.so" $@
   '';
 in
 

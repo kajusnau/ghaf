@@ -239,7 +239,7 @@ let
           open_url() {
             echo "Opening URL in ${urlVmName}: $resource"
 
-            ${pkgs.givc-cli}/bin/givc-cli ${config.ghaf.givc.cliArgs} \
+            ${lib.getExe' pkgs.givc-cli "givc-cli"} ${config.ghaf.givc.cliArgs} \
               start app --vm "${urlVmName}" "xdg-url" -- "$resource"
           }
 
@@ -254,7 +254,7 @@ let
 
           open_element_desktop() {
             echo "Opening Element desktop in comms-vm: $resource"
-            ${pkgs.givc-cli}/bin/givc-cli ${config.ghaf.givc.cliArgs} \
+            ${lib.getExe' pkgs.givc-cli "givc-cli"} ${config.ghaf.givc.cliArgs} \
               start app --vm comms-vm "xdg-element-desktop" -- "$resource"
           }
 
@@ -281,7 +281,7 @@ let
                 cp -f "$filePath" "/run/xdg/$type/$fileName"
 
                 local dst="/run/xdg/$type/${config.ghaf.storagevm.name}/$fileName"
-                ${pkgs.givc-cli}/bin/givc-cli ${config.ghaf.givc.cliArgs} \
+                ${lib.getExe' pkgs.givc-cli "givc-cli"} ${config.ghaf.givc.cliArgs} \
                   start app --vm media-vm "xdg-$type" -- "$dst"
                 ;;
               *)

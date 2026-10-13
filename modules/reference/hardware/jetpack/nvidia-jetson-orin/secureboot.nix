@@ -23,7 +23,7 @@ let
           exit 1
         fi
 
-        ${pkgs.buildPackages.efitools}/bin/cert-to-efi-sig-list "$certPath" "$out"
+        ${lib.getExe' pkgs.buildPackages.efitools "cert-to-efi-sig-list"} "$certPath" "$out"
 
         if [ "$(wc -c < "$out")" -le 44 ]; then
           echo "Generated ESL ${name} from $certPath is empty" >&2

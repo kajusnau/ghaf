@@ -33,7 +33,7 @@ in
         Type = "simple";
         Restart = "always";
         RestartSec = "1";
-        ExecStart = "${pkgs.vinotify}/bin/vinotify --port 2000 --path /Shares --mode guest";
+        ExecStart = "${lib.getExe pkgs.vinotify} --port 2000 --path /Shares --mode guest";
       };
       startLimitIntervalSec = 0;
     };

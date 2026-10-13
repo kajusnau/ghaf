@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2022-2026 TII (SSRC) and the Ghaf contributors
 # SPDX-License-Identifier: Apache-2.0
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   config = {
     ghaf.hardware.definition.usb.devices = [
@@ -12,7 +12,7 @@
         vendorId = "067b";
         productId = "23a3";
         vmUdevExtraRule = ''
-          ACTION=="add", ENV{ID_BUS}=="usb", ENV{ID_VENDOR_ID}=="${vendorId}", ENV{ID_MODEL_ID}=="${productId}", ENV{DEVNAME}=="/dev/ttyUSB*", RUN+="${pkgs.gpsd}/bin/gpsdctl add '%E{DEVNAME}'"
+          ACTION=="add", ENV{ID_BUS}=="usb", ENV{ID_VENDOR_ID}=="${vendorId}", ENV{ID_MODEL_ID}=="${productId}", ENV{DEVNAME}=="/dev/ttyUSB*", RUN+="${lib.getExe' pkgs.gpsd "gpsdctl"} add '%E{DEVNAME}'"
         '';
       }
       # Logitech Gamepad F310

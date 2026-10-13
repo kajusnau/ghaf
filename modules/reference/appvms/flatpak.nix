@@ -32,7 +32,7 @@ let
       # TODO: Investigate
       export PATH=/run/wrappers/bin:/run/current-system/sw/bin
       # Quite verbose by default, so we set the logging to error
-      RUST_LOG=error ${pkgs.cosmic-store}/bin/cosmic-store
+      RUST_LOG=error ${lib.getExe' pkgs.cosmic-store "cosmic-store"}
     '';
   };
 

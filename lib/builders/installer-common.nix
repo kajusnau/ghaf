@@ -114,17 +114,17 @@ in
             # machine comes back unbootable. tee keeps the console copy.
             set -o pipefail
             ${self.packages.${system}.ghaf-installer}/bin/ghaf-installer 2>&1 |
-              ${pkgs.coreutils}/bin/tee >(${pkgs.systemd}/bin/systemd-cat -t ghaf-installer)
+              ${lib.getExe' pkgs.coreutils "tee"} >(${lib.getExe' pkgs.systemd "systemd-cat"} -t ghaf-installer)
             exit "''${PIPESTATUS[0]}"
           fi
           exec ${self.packages.${system}.ghaf-installer-tui}/bin/ghaf-installer-tui
         '';
         # Suppress kernel printk noise on tty1 while TUI is active
-        ExecStartPre = "${pkgs.util-linux}/bin/dmesg -n 1";
+        ExecStartPre = "${lib.getExe' pkgs.util-linux "dmesg"} -n 1";
         # Restore kernel log level and hand tty1 back to getty on exit
         ExecStopPost = [
-          "${pkgs.util-linux}/bin/dmesg -n 7"
-          "${pkgs.systemd}/bin/systemctl start getty@tty1.service"
+          "${lib.getExe' pkgs.util-linux "dmesg"} -n 7"
+          "${lib.getExe' pkgs.systemd "systemctl"} start getty@tty1.service"
         ];
         StandardInput = "tty";
         StandardOutput = "tty";
@@ -163,7 +163,7 @@ in
     # NOTE: Stop nixos complains about "warning:
     # mdadm: Neither MAILADDR nor PROGRAM has been set. This will cause the `mdmon` service to crash."
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles/installation-device.nix#L112
-    boot.swraid.mdadmConf = "PROGRAM ${pkgs.coreutils}/bin/true";
+    boot.swraid.mdadmConf = "PROGRAM ${lib.getExe' pkgs.coreutils "true"}";
 
     ghaf.development.usb-serial.enable = true;
 

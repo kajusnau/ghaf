@@ -189,7 +189,7 @@ pkgs.testers.nixosTest {
             "files=pathlib.Path('/var/lib/logseald/producer/sealed').glob('*.json'); "
             f"assert any({marker.encode()!r} in base64.b64decode(json.loads(p.read_text())['request']['body']) for p in files)"
         )
-        producer.wait_until_succeeds("${pkgs.python3}/bin/python3 -c " + shlex.quote(marker_check))
+        producer.wait_until_succeeds("${lib.getExe' pkgs.python3 "python3"} -c " + shlex.quote(marker_check))
         producer.succeed("logseald verify-producer --state-dir /var/lib/logseald/producer --cert /var/lib/logseald-test-credentials/cert.pem --source producer")
         admin.succeed("logseald verify-sealer --state-dir /var/lib/logseald/sealer")
     producer.succeed("systemctl start systemd-timesyncd.service")
@@ -235,7 +235,7 @@ pkgs.testers.nixosTest {
             "files=pathlib.Path('/var/lib/logseald/producer/sealed').glob('*.json'); "
             "assert any(b'NEW_CREDENTIAL_MARKER' in base64.b64decode(json.loads(p.read_text())['request']['body']) for p in files)"
         )
-        producer.wait_until_succeeds("${pkgs.python3}/bin/python3 -c " + shlex.quote(marker_check))
+        producer.wait_until_succeeds("${lib.getExe' pkgs.python3 "python3"} -c " + shlex.quote(marker_check))
         producer.succeed("logseald verify-producer --state-dir /var/lib/logseald/producer --cert /var/lib/logseald-test-credentials/cert.pem --source producer")
         admin.succeed("logseald verify-sealer --state-dir /var/lib/logseald/sealer")
   '';

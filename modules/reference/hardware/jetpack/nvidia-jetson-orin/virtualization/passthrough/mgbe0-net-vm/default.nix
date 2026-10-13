@@ -117,8 +117,8 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = "yes";
-        ExecStartPre = "${pkgs.bash}/bin/bash -c \"echo vfio-platform > /sys/bus/platform/devices/6800000.ethernet/driver_override\"";
-        ExecStart = "${pkgs.bash}/bin/bash -c \"echo 6800000.ethernet > /sys/bus/platform/drivers/vfio-platform/bind\"";
+        ExecStartPre = "${lib.getExe pkgs.bash} -c \"echo vfio-platform > /sys/bus/platform/devices/6800000.ethernet/driver_override\"";
+        ExecStart = "${lib.getExe pkgs.bash} -c \"echo 6800000.ethernet > /sys/bus/platform/drivers/vfio-platform/bind\"";
       };
     };
     systemd.services."microvm@net-vm".after = [ "bindMgbe0.service" ];

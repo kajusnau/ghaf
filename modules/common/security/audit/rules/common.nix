@@ -41,7 +41,7 @@ lib.optionals config.nix.enable [
   "-w ${config.nix.package}/bin/nix-collect-garbage -p x -k nix-gc"
   "-w ${config.nix.package}/bin/nix-build -p x -k nix-build"
   # nixos-rebuild is a separate package
-  "-w ${pkgs.nixos-rebuild}/bin/nixos-rebuild -p x -k nix-syschange"
+  "-w ${lib.getExe pkgs.nixos-rebuild} -p x -k nix-syschange"
   # System-wide config
   "-w /etc/nix -p wa -k nix_conf"
   "-w /etc/nixos -p wa -k nixos_conf"
@@ -241,7 +241,7 @@ lib.optionals config.nix.enable [
   # "-a always,exit -F arch=b64 -F dir=/etc/sudoers.d/ -F perm=wa -F key=actions"
 
   ## Special case for systemd-run. It is not audit aware, specifically watch it
-  # "-a always,exit -F arch=b64 -F path=${pkgs.systemd}/bin/systemd-run -F perm=x -F auid!=unset -F key=maybe-escalation"
+  # "-a always,exit -F arch=b64 -F path=${lib.getExe' pkgs.systemd "systemd-run"} -F perm=x -F auid!=unset -F key=maybe-escalation"
 
   ## Special case for pkexec. It is not audit aware, specifically watch it
   # "-a always,exit -F arch=b64 -F path=/usr/bin/pkexec -F perm=x -F key=maybe-escalation"
@@ -394,7 +394,7 @@ lib.optionals config.nix.enable [
 
     ## Privilege escalation via su or sudo. This is entirely handled by pam.
     ## Special case for systemd-run. It is not audit aware, specifically watch it
-    "-a always,exit -F arch=b64 -F path=${pkgs.systemd}/bin/systemd-run -F perm=x -F auid!=unset -F key=maybe-escalation"
+    "-a always,exit -F arch=b64 -F path=${lib.getExe' pkgs.systemd "systemd-run"} -F perm=x -F auid!=unset -F key=maybe-escalation"
 
     ## Special case for pkexec. It is not audit aware, specifically watch it
     # TODO Handle kexec

@@ -176,7 +176,7 @@ in
       RemainAfterExit = true;
     };
     script = ''
-      for attempt in $(${pkgs.coreutils}/bin/seq 1 30); do
+      for attempt in $(${lib.getExe' pkgs.coreutils "seq"} 1 30); do
         if [ -e /dev/nvgpu/igpu0/ctrl ]; then
           break
         fi
@@ -184,7 +184,7 @@ in
           echo "GPU control node did not appear within 30 seconds" >&2
           exit 1
         fi
-        ${pkgs.coreutils}/bin/sleep 1
+        ${lib.getExe' pkgs.coreutils "sleep"} 1
       done
 
       for d in /dev/nvgpu /dev/nvhost-* /dev/nvmap; do

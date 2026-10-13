@@ -192,7 +192,7 @@ in
           runtimeInputs = [ pkgs.btrfs-progs ];
           text = ''
             # Extend btrfs to use newly allocated space
-            ${pkgs.btrfs-progs}/bin/btrfs filesystem resize max /persist
+            ${lib.getExe pkgs.btrfs-progs} filesystem resize max /persist
           '';
         };
       in

@@ -20,9 +20,9 @@ let
 
   execStart =
     if cfg.csdWrapper == null then
-      "${pkgs.globalprotect-openconnect}/bin/gpservice"
+      "${lib.getExe' pkgs.globalprotect-openconnect "gpservice"}"
     else
-      "${pkgs.globalprotect-openconnect}/bin/gpservice --csd-wrapper=${cfg.csdWrapper}";
+      "${lib.getExe' pkgs.globalprotect-openconnect "gpservice"} --csd-wrapper=${cfg.csdWrapper}";
 in
 
 {

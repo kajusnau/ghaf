@@ -44,7 +44,9 @@ let
     ;
 
   useGivc = config.ghaf.givc.enable;
-  givc-cli = "${pkgs.givc-cli}/bin/givc-cli ${replaceString "/run" "/etc" config.ghaf.givc.cliArgs}";
+  givc-cli = "${lib.getExe' pkgs.givc-cli "givc-cli"} ${
+    replaceString "/run" "/etc" config.ghaf.givc.cliArgs
+  }";
   ghaf-powercontrol = pkgs.ghaf-powercontrol.override { ghafConfig = config.ghaf; };
 
   # List of all passthrough nic and audio PCI devices. The generated list of "vendorId:productId" strings
@@ -830,7 +832,7 @@ in
                         # -t1 bounds socat: microvm.nix's own wait here is unbounded.
                         echo "QMP system_powerdown -> '${vmName}' ($socket)"
                         printf '{"execute":"qmp_capabilities"}\n{"execute":"system_powerdown"}\n' \
-                          | ${pkgs.socat}/bin/socat -t1 - "UNIX-CONNECT:$socket" \
+                          | ${lib.getExe pkgs.socat} -t1 - "UNIX-CONNECT:$socket" \
                           || echo "WARN: QMP system_powerdown to '${vmName}' failed; relying on stop timeout" >&2
                       else
                         echo "WARN: no QMP socket for '${vmName}' ('$socket'); SIGTERM fallback" >&2
@@ -1046,7 +1048,7 @@ in
               "${getExe guest-fake-suspend}"
             ]
             ++ optionals (!cfg.vm.fakeSuspend) [
-              "${pkgs.coreutils}/bin/true"
+              "${lib.getExe' pkgs.coreutils "true"}"
             ];
 
           # Pre-suspend actions for the VM.

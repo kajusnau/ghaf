@@ -180,7 +180,7 @@ in
           mv kernel.efi ${kernelImage}
           ${lib.optionalString (cfg.uki-signing-key-dir != null) ''
             echo "Signing UKI with legacy debug Secure Boot key..."
-            ${pkgs.buildPackages.sbsigntool}/bin/sbsign \
+            ${lib.getExe' pkgs.buildPackages.sbsigntool "sbsign"} \
               --key ${cfg.uki-signing-key-dir}/db.key \
               --cert ${cfg.uki-signing-key-dir}/db.crt \
               --output ${kernelImage} ${kernelImage}

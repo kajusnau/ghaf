@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 { pkgs, self }:
 let
+  inherit (pkgs) lib;
   host = self.nixosConfigurations.intel-laptop-debug-secure-ab.config;
   image = pkgs.runCommand "x86-deferred-test-disk.raw" { nativeBuildInputs = [ pkgs.zstd ]; } ''
     zstd -d ${pkgs.ghaf-prepare-x86-verity-disk.tests.image}/ghaf-image.raw.zst -o "$out"
@@ -37,7 +38,7 @@ let
         RemainAfterExit = true;
         Environment = "TERM=linux";
         # Let verity win the race when the production ordering is missing.
-        ExecStartPre = "${pkgs.coreutils}/bin/sleep 2";
+        ExecStartPre = "${lib.getExe' pkgs.coreutils "sleep"} 2";
         inherit (host.boot.initrd.systemd.services.first-boot-encrypt.serviceConfig)
           ExecStart
           ExecStartPost
@@ -48,10 +49,10 @@ let
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStop = "${pkgs.cryptsetup}/bin/veritysetup close nix-store";
+        ExecStop = "${lib.getExe' pkgs.cryptsetup "veritysetup"} close nix-store";
       };
       script = ''
-        ${pkgs.cryptsetup}/bin/veritysetup open /dev/pool/root_1_deadbeef nix-store \
+        ${lib.getExe' pkgs.cryptsetup "veritysetup"} open /dev/pool/root_1_deadbeef nix-store \
           /dev/pool/verity_1_deadbeef "$(cat /run/test-roothash)"
       '';
     };

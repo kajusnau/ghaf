@@ -13,7 +13,7 @@
   config.security.apparmor.policies."bin.ping" = lib.mkIf config.ghaf.security.apparmor.enable {
     profile = ''
       #include <tunables/global>
-      ${pkgs.iputils}/bin/ping {
+      ${lib.getExe' pkgs.iputils "ping"} {
         #include <abstractions/base>
         #include <abstractions/consoles>
         #include <abstractions/nameservice>
@@ -24,7 +24,7 @@
         capability setuid,
         network inet raw,
 
-        ${pkgs.iputils}/bin/ping mixr,
+        ${lib.getExe' pkgs.iputils "ping"} mixr,
         /etc/modules.conf r,
       }
 

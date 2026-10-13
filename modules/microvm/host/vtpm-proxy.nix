@@ -27,7 +27,7 @@ lib.mkIf cfg.enable {
 
         # admin-vm is hard-coded to host the vTPM daemons
         script = ''
-          ${pkgs.swtpm-proxy-shim}/bin/swtpm-proxy --type vsock \
+          ${lib.getExe' pkgs.swtpm-proxy-shim "swtpm-proxy"} --type vsock \
             --control-port ${toString cport} \
             --control-retry-count 30 \
             /var/lib/microvms/${name}-vm/vtpm.sock \

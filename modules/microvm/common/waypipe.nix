@@ -48,7 +48,7 @@ let
     #!${pkgs.runtimeShell} -e
     ${waypipeBaseCmd} \
     --display ${cfg.persistentWaypipeServer.display} \
-    server -- ${pkgs.coreutils}/bin/sleep infinity
+    server -- ${lib.getExe' pkgs.coreutils "sleep"} infinity
   '';
 
   xwaylandSatelliteSocket =

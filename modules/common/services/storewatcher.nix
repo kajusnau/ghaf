@@ -53,41 +53,41 @@ let
         # $1=file, $2=payload (no trailing newline added unless given)
         local f="$1"
         local tmp="$f.$$"
-        ${pkgs.coreutils}/bin/printf '%s' "$2" > "$tmp"
-        ${pkgs.coreutils}/bin/mv -f "$tmp" "$f"
+        ${lib.getExe' pkgs.coreutils "printf"} '%s' "$2" > "$tmp"
+        ${lib.getExe' pkgs.coreutils "mv"} -f "$tmp" "$f"
       }
 
       read_num() {
         # digits-only, default 0 on empty/err
         local f="$1" n
-        n="$(${pkgs.coreutils}/bin/tr -cd '0-9' < "$f" 2>/dev/null || true)"
+        n="$(${lib.getExe' pkgs.coreutils "tr"} -cd '0-9' < "$f" 2>/dev/null || true)"
         [ -n "$n" ] && echo "$n" || echo 0
       }
 
       read_text() {
         local f="$1"
-        ${pkgs.coreutils}/bin/cat "$f" 2>/dev/null || true
+        ${lib.getExe' pkgs.coreutils "cat"} "$f" 2>/dev/null || true
       }
 
       basename_safely() {
-        ${pkgs.coreutils}/bin/basename -- "$1" 2>/dev/null || true
+        ${lib.getExe' pkgs.coreutils "basename"} -- "$1" 2>/dev/null || true
       }
 
       dir_mtime() {
         local p="$1"
-        ${pkgs.coreutils}/bin/stat -c %Y -- "$p" 2>/dev/null || echo 0
+        ${lib.getExe' pkgs.coreutils "stat"} -c %Y -- "$p" 2>/dev/null || echo 0
       }
 
       log() {
         # $1=prio (debug|info|warning|err), $2=message
-        ${pkgs.systemd}/bin/systemd-cat -t nixos-rebuild -p "$1" -- ${pkgs.coreutils}/bin/printf '%s\n' "$2"
+        ${lib.getExe' pkgs.systemd "systemd-cat"} -t nixos-rebuild -p "$1" -- ${lib.getExe' pkgs.coreutils "printf"} '%s\n' "$2"
       }
 
       _real_switch_line_since() {
         local since="$1"
-        ${pkgs.systemd}/bin/journalctl -u nixos-rebuild-switch-to-configuration --since "@$since" --no-pager \
-          | ${pkgs.gnugrep}/bin/grep -F '/bin/switch-to-configuration' \
-          | ${pkgs.coreutils}/bin/tail -n 1
+        ${lib.getExe' pkgs.systemd "journalctl"} -u nixos-rebuild-switch-to-configuration --since "@$since" --no-pager \
+          | ${lib.getExe pkgs.gnugrep} -F '/bin/switch-to-configuration' \
+          | ${lib.getExe' pkgs.coreutils "tail"} -n 1
       }
 
       maybe_success() {
@@ -106,9 +106,9 @@ let
 
         # Success 2: system profile advanced
         local prof_target prof_ts
-        prof_target="$(${pkgs.coreutils}/bin/readlink -f "$profile" || true)"
+        prof_target="$(${lib.getExe' pkgs.coreutils "readlink"} -f "$profile" || true)"
         if [ -n "$prof_target" ]; then
-          prof_ts="$(${pkgs.coreutils}/bin/stat -c %Y "$prof_target" || echo 0)"
+          prof_ts="$(${lib.getExe' pkgs.coreutils "stat"} -c %Y "$prof_target" || echo 0)"
           if [ "$prof_ts" -ge "$started" ]; then
             log info "store-copy-session ok: pkg=$pkg profile advanced (ts=@$prof_ts >= @$started)"
             write_atomic "$state/session_start" "0"
@@ -164,12 +164,12 @@ let
           # Wait until quiet_seconds have elapsed with no changes
           while :; do
             local now deadline last nowStart last_path cur_mtime
-            now="$(${pkgs.coreutils}/bin/date +%s)"
+            now="$(${lib.getExe' pkgs.coreutils "date"} +%s)"
             deadline=$(( edge_ts + quiet_seconds ))
             if [ "$now" -ge "$deadline" ]; then
               break
             fi
-            ${pkgs.coreutils}/bin/sleep 1
+            ${lib.getExe' pkgs.coreutils "sleep"} 1
 
             last="$(read_num "$state/last_event")"
             nowStart="$(read_num "$state/session_start")"
@@ -199,7 +199,7 @@ let
           # Busy-grace loop: give the current package some time if its mtime keeps advancing.
           local i=0
           while [ "$i" -lt "$busy_grace_cycles" ]; do
-            ${pkgs.coreutils}/bin/sleep "$busy_grace_seconds"
+            ${lib.getExe' pkgs.coreutils "sleep"} "$busy_grace_seconds"
 
             # Re-evaluate progress
             local last nowStart last_path cur_mtime
@@ -232,8 +232,8 @@ let
           local already
           already="$(read_num "$state/aborted_for")"
           if [ "$already" -ne "$started" ]; then
-            log warning "$(${pkgs.coreutils}/bin/printf 'store-copy-session likely aborted: pkg=%s idle after last /nix/store activity (session_start=@%s last_edge=@%s ts=%s)\n' \
-              "$pkg" "$started" "$edge_ts" "$(${pkgs.coreutils}/bin/date -Is)")"
+            log warning "$(${lib.getExe' pkgs.coreutils "printf"} 'store-copy-session likely aborted: pkg=%s idle after last /nix/store activity (session_start=@%s last_edge=@%s ts=%s)\n' \
+              "$pkg" "$started" "$edge_ts" "$(${lib.getExe' pkgs.coreutils "date"} -Is)")"
             write_atomic "$state/aborted_for" "$started"
             # reset so the next event becomes a fresh session
             write_atomic "$state/session_start" "0"
@@ -244,7 +244,7 @@ let
           # Long idle: clear markers
           local last_ts now2
           last_ts="$(read_num "$state/last_event")"
-          now2="$(${pkgs.coreutils}/bin/date +%s)"
+          now2="$(${lib.getExe' pkgs.coreutils "date"} +%s)"
           if [ $(( now2 - last_ts )) -ge "$session_reset_seconds" ]; then
             log info "store-copy-debug reset: pkg=$pkg long idle (>=$session_reset_seconds s), clearing session"
             write_atomic "$state/session_start" "0"
@@ -257,7 +257,7 @@ let
         # Start a single worker if none is running
         if [ -f "$timer_pid_file" ]; then
           local pid
-          pid="$(${pkgs.coreutils}/bin/cat "$timer_pid_file" 2>/dev/null || echo 0)"
+          pid="$(${lib.getExe' pkgs.coreutils "cat"} "$timer_pid_file" 2>/dev/null || echo 0)"
           if [ "$pid" -gt 0 ] && kill -0 "$pid" 2>/dev/null; then
             return 0
           fi
@@ -287,7 +287,7 @@ let
             log info "store-copy-debug evt: dir=$path t=@$t sess_start=@$current pkg=$(basename_safely "$path")"
           fi
         fi
-      done < <(${pkgs.inotify-tools}/bin/inotifywait -m -e create -e moved_to --format '%T %w%f' --timefmt '%s' "$store")
+      done < <(${lib.getExe' pkgs.inotify-tools "inotifywait"} -m -e create -e moved_to --format '%T %w%f' --timefmt '%s' "$store")
     '';
   };
 in

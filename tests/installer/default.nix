@@ -11,6 +11,7 @@
 # This will allow you to interact with installed ghaf.
 { pkgs, self }:
 let
+  inherit (pkgs) lib;
   testConfig = "intel-laptop-debug";
   expectedHostname = "ghaf-host";
 
@@ -59,7 +60,7 @@ pkgs.testers.nixosTest {
       assert oldmachine is not None, "create_test_machine requires oldmachine"
       # TODO: tpm2-abrmd.service fails to start. https://qemu-project.gitlab.io/qemu/specs/tpm.html
       start_command = [
-          "${pkgs.qemu_test}/bin/qemu-kvm",
+          "${lib.getExe pkgs.qemu_test}",
           "-cpu",
           "max",
           "-m",

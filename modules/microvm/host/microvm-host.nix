@@ -382,7 +382,7 @@ in
             Type = "simple";
             Restart = "always";
             RestartSec = "1";
-            ExecStart = "${pkgs.vinotify}/bin/vinotify --cid ${toString config.ghaf.networking.hosts.gui-vm.cid} --port 2000 --path /persist/storagevm/shared/shares --mode host";
+            ExecStart = "${lib.getExe pkgs.vinotify} --cid ${toString config.ghaf.networking.hosts.gui-vm.cid} --port 2000 --path /persist/storagevm/shared/shares --mode host";
           };
           startLimitIntervalSec = 0;
         };

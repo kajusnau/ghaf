@@ -29,10 +29,10 @@ in
         "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}";
       extraInstallCommands = ''
         # Find out the latest generation from loader.conf
-        default_cfg=$(${pkgs.coreutils}/bin/cat /boot/loader/loader.conf | ${pkgs.gnugrep}/bin/grep default | ${pkgs.gawk}/bin/awk '{print $2}')
-        FILEHASH=$(${pkgs.coreutils}/bin/sha256sum "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}" | ${pkgs.coreutils}/bin/cut -d ' ' -f 1)
+        default_cfg=$(${lib.getExe' pkgs.coreutils "cat"} /boot/loader/loader.conf | ${lib.getExe pkgs.gnugrep} default | ${lib.getExe' pkgs.gawk "awk"} '{print $2}')
+        FILEHASH=$(${lib.getExe' pkgs.coreutils "sha256sum"} "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}" | ${lib.getExe' pkgs.coreutils "cut"} -d ' ' -f 1)
         FILENAME="/dtbs/$FILEHASH.dtb"
-        ${pkgs.coreutils}/bin/cp -fv "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}" "/boot$FILENAME"
+        ${lib.getExe' pkgs.coreutils "cp"} -fv "${config.hardware.deviceTree.package}/${config.hardware.deviceTree.name}" "/boot$FILENAME"
         echo "devicetree $FILENAME" >> /boot/loader/entries/$default_cfg
       '';
     };

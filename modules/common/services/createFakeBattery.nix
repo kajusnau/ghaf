@@ -34,7 +34,7 @@ in
           unitConfig.ConditionPathExists = "!/sys/class/power_supply/BAT0";
           serviceConfig = {
             Type = "oneshot";
-            ExecStart = "${pkgs.kmod}/bin/modprobe fake_battery";
+            ExecStart = "${lib.getExe' pkgs.kmod "modprobe"} fake_battery";
           };
         };
       };

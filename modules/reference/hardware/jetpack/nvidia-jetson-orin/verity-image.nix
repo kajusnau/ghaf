@@ -60,8 +60,8 @@ let
           # first slot participates in normal A/B discovery and is removed when its
           # physical slot is reused.
           manifest=$(find ${ghafUpdateImage} -name '*.manifest' | head -1)
-          version=$(${pkgs.buildPackages.jq}/bin/jq -er '.version' "$manifest")
-          root_hash=$(${pkgs.buildPackages.jq}/bin/jq -er '.root_verity_hash' "$manifest")
+          version=$(${lib.getExe pkgs.buildPackages.jq} -er '.version' "$manifest")
+          root_hash=$(${lib.getExe pkgs.buildPackages.jq} -er '.root_verity_hash' "$manifest")
           printf 'ghaf-%s-%s.efi\n' "$version" "''${root_hash:0:16}" > "$out/uki-filename"
         ''
       else

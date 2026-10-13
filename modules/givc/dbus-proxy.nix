@@ -82,7 +82,7 @@ in
           Restart = lib.mkDefault "always";
           RestartSec = lib.mkDefault "1s";
           ExecStartPre = [
-            "${pkgs.coreutils}/bin/timeout 30 ${lib.getExe waitForSocket}"
+            "${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe waitForSocket}"
           ];
           Environment = [ "DBUS_SESSION_BUS_ADDRESS=unix:path=${proxy.socket}" ];
           ExecStart = [ (lib.getExe startProxy) ];

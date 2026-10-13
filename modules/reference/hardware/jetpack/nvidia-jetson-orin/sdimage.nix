@@ -193,7 +193,7 @@ in
         populateRootCommands = ''
           mkdir -p ./rootImage/nix/var/nix
           NIX_STATE_DIR=$(readlink -f ./rootImage/nix/var/nix) \
-            ${pkgs.buildPackages.nix}/bin/nix-store --load-db \
+            ${lib.getExe' pkgs.buildPackages.nix "nix-store"} --load-db \
               < ${
                 pkgs.buildPackages.closureInfo { rootPaths = [ config.system.build.toplevel ]; }
               }/registration

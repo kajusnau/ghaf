@@ -87,10 +87,10 @@ in
         Type = "oneshot";
         RemainAfterExit = "yes";
         ExecStartPre = ''
-          ${pkgs.bash}/bin/bash -c "echo vfio-platform > /sys/bus/platform/devices/31d0000.serial/driver_override"
+          ${lib.getExe pkgs.bash} -c "echo vfio-platform > /sys/bus/platform/devices/31d0000.serial/driver_override"
         '';
         ExecStart = ''
-          ${pkgs.bash}/bin/bash -c "echo 31d0000.serial > /sys/bus/platform/drivers/vfio-platform/bind"
+          ${lib.getExe pkgs.bash} -c "echo 31d0000.serial > /sys/bus/platform/drivers/vfio-platform/bind"
         '';
       };
     };

@@ -79,7 +79,7 @@ in
       systemd.services."mitmweb-server" =
         let
           mitmwebScript = pkgs.writeShellScriptBin "mitmweb-server" ''
-            ${pkgs.mitmproxy}/bin/mitmweb --web-host localhost --web-port ${toString mitmwebUIport} --set confdir=/etc/mitmproxy --set web_debug=true --set web_password=${lib.escapeShellArg cfg.webUIPswd}
+            ${lib.getExe' pkgs.mitmproxy "mitmweb"} --web-host localhost --web-port ${toString mitmwebUIport} --set confdir=/etc/mitmproxy --set web_debug=true --set web_password=${lib.escapeShellArg cfg.webUIPswd}
           '';
         in
         lib.mkIf cfg.webUIEnabled {

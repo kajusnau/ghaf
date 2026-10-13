@@ -43,7 +43,7 @@ in
         desktopName = "Google Chrome";
         categories = [ "WebBrowser" ];
         description = "Web Browser";
-        exec = "${pkgs.google-chrome}/bin/google-chrome-stable --enable-features=UseOzonePlatform --ozone-platform=wayland";
+        exec = "${lib.getExe pkgs.google-chrome} --enable-features=UseOzonePlatform --ozone-platform=wayland";
         icon = "google-chrome";
       }
       ++ lib.optional cfg.chromium {
@@ -51,7 +51,7 @@ in
         desktopName = "Chromium";
         categories = [ "WebBrowser" ];
         description = "Web Browser";
-        exec = "${pkgs.chromium}/bin/chromium --enable-features=UseOzonePlatform --ozone-platform=wayland";
+        exec = "${lib.getExe pkgs.chromium} --enable-features=UseOzonePlatform --ozone-platform=wayland";
         icon = "chromium";
       }
       ++ lib.optional cfg.firefox {
@@ -59,7 +59,7 @@ in
         desktopName = "Firefox";
         categories = [ "WebBrowser" ];
         description = "Web Browser";
-        exec = "${pkgs.firefox}/bin/firefox";
+        exec = lib.getExe pkgs.firefox;
         icon = "firefox";
       }
       ++ lib.optional cfg.element-desktop {
@@ -70,14 +70,14 @@ in
           "Chat"
         ];
         description = "General Messaging Application";
-        exec = "${pkgs.element-desktop}/bin/element-desktop --enable-features=UseOzonePlatform --ozone-platform=wayland";
+        exec = "${lib.getExe pkgs.element-desktop} --enable-features=UseOzonePlatform --ozone-platform=wayland";
         icon = "element-desktop";
       }
       ++ lib.optional cfg.gala {
         name = "chrome-gala-atrc.azure-atrc.androidinthecloud.net__-Default";
         desktopName = "GALA";
         description = "Secure Android-in-the-Cloud";
-        exec = "${pkgs.gala}/bin/gala --enable-features=UseOzonePlatform --ozone-platform=wayland";
+        exec = "${lib.getExe' pkgs.gala "gala"} --enable-features=UseOzonePlatform --ozone-platform=wayland";
         icon = "distributor-logo-android";
       }
       ++ lib.optional cfg.media {

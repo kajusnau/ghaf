@@ -203,7 +203,7 @@ let
                     icon = "bluetooth-48";
                     exec = "${pkgs.writeShellScriptBin "bluetooth-settings" ''
                       PULSE_SERVER=audio-vm:${toString config.ghaf.services.audio.server.pulseaudioTcpControlPort} \
-                      ${pkgs.blueman}/bin/blueman-manager
+                      ${lib.getExe pkgs.blueman}
                     ''}/bin/bluetooth-settings";
                   }
                 ];

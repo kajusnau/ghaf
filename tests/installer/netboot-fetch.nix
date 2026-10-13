@@ -21,6 +21,7 @@
 # artefact does not prove the target booted.
 { pkgs, self }:
 let
+  inherit (pkgs) lib;
   testConfig = "intel-laptop-debug";
   expectedHostname = "ghaf-host";
 
@@ -109,7 +110,7 @@ pkgs.testers.nixosTest {
     ):  # taken from <nixpkgs/nixos/tests/installer.nix>
       assert oldmachine is not None, "create_test_machine requires oldmachine"
       start_command = [
-          "${pkgs.qemu_test}/bin/qemu-kvm",
+          "${lib.getExe pkgs.qemu_test}",
           "-cpu",
           "max",
           "-m",

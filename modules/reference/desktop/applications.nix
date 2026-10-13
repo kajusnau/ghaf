@@ -41,7 +41,7 @@ in
         icon = "bluetooth-48";
         exec = "${pkgs.writeShellScriptBin "bluetooth-settings" ''
           PULSE_SERVER=audio-vm:${toString config.ghaf.services.audio.server.pulseaudioTcpControlPort} \
-          ${pkgs.blueman}/bin/blueman-manager
+          ${lib.getExe pkgs.blueman}
         ''}/bin/bluetooth-settings";
       }
 
@@ -54,7 +54,7 @@ in
         ];
         description = "Ghaf Control Panel";
         icon = "utilities-tweak-tool";
-        exec = "${pkgs.ctrl-panel}/bin/ctrl-panel ${config.ghaf.givc.cliArgs}";
+        exec = "${lib.getExe' pkgs.ctrl-panel "ctrl-panel"} ${config.ghaf.givc.cliArgs}";
       }
     ]
     ++ lib.optionals config.ghaf.reference.services.alpaca-ollama [
@@ -77,7 +77,7 @@ in
           desktopName = "Windows";
           description = "Virtualized Windows System";
           icon = "distributor-logo-windows";
-          exec = "${pkgs.virt-viewer}/bin/remote-viewer -f spice://${winConfig.spice-host}:${toString winConfig.spice-port}";
+          exec = "${lib.getExe' pkgs.virt-viewer "remote-viewer"} -f spice://${winConfig.spice-host}:${toString winConfig.spice-port}";
         }
       ]
     );

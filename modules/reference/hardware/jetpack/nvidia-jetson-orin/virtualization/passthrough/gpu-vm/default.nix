@@ -104,10 +104,10 @@ in
         RemainAfterExit = "yes";
         ExecStartPre = map (
           d:
-          "${pkgs.bash}/bin/bash -c \"echo vfio-platform > /sys/bus/platform/devices/${d}/driver_override\""
+          "${lib.getExe pkgs.bash} -c \"echo vfio-platform > /sys/bus/platform/devices/${d}/driver_override\""
         ) payload.hostDevices;
         ExecStart = map (
-          d: "${pkgs.bash}/bin/bash -c \"echo ${d} > /sys/bus/platform/drivers/vfio-platform/bind\""
+          d: "${lib.getExe pkgs.bash} -c \"echo ${d} > /sys/bus/platform/drivers/vfio-platform/bind\""
         ) payload.hostDevices;
       };
     };

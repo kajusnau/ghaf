@@ -21,7 +21,7 @@ in
 
     # Wait up to 60 seconds for ethernet PCI to get enumerated
     systemd.services."microvm-pci-devices@net-vm".serviceConfig.ExecStartPre = ''
-      ${pkgs.bash}/bin/bash -c ' \
+      ${lib.getExe pkgs.bash} -c ' \
       TIMEOUT=60; \
       ELAPSED=0; \
       while [ ! -e /sys/bus/pci/devices/${ethPciDevice} ]; do \

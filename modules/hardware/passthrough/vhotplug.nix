@@ -285,7 +285,7 @@ in
             Type = lib.mkForce "exec";
             TimeoutStartSec = "10min";
             ExecStartPre = lib.mkBefore [
-              "${pkgs.coreutils}/bin/rm -f ${lib.escapeShellArg vm.socket}"
+              "${lib.getExe' pkgs.coreutils "rm"} -f ${lib.escapeShellArg vm.socket}"
             ];
             ExecStartPost = lib.mkBefore [
               "${lib.getExe waitForCrosvmSocket} ${lib.escapeShellArg vm.socket} $MAINPID"

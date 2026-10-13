@@ -14,7 +14,7 @@ let
   debugFlag = lib.optionalString config.ghaf.profiles.debug.enable "--log-level TRACE";
   wireguard-gui-launcher = pkgs.writeShellScriptBin "wireguard-gui-launcher" ''
     PATH=/run/wrappers/bin:/run/current-system/sw/bin
-    ${pkgs.wireguard-gui}/bin/wireguard-gui \
+    ${lib.getExe' pkgs.wireguard-gui "wireguard-gui"} \
       --app-dir ${wg_app_dir} \
       --config-owner ${config.ghaf.users.appUser.name} \
       --config-owner-group ${config.ghaf.users.appUser.name} \
@@ -102,7 +102,7 @@ in
                               "/run/current-system/sw/share " +
                               "PATH=/run/wrappers/bin:/run/current-system/sw/bin " +
                               "LIBGL_ALWAYS_SOFTWARE=true " +
-                              "${pkgs.wireguard-gui}/bin/.wireguard-gui-wrapped --config-owner ${config.ghaf.users.appUser.name} --config-owner-group users";
+                              "${lib.getExe' pkgs.wireguard-gui ".wireguard-gui-wrapped"} --config-owner ${config.ghaf.users.appUser.name} --config-owner-group users";
           polkit.log("Expected commandline = " + expectedcmdline);
           if (action.id == "org.freedesktop.policykit.exec" &&
             RegExp('^/run/current-system/sw/bin/env WAYLAND_DISPLAY=wayland-[a-zA-Z0-9]+ ').test(action.lookup("command_line")) === true &&

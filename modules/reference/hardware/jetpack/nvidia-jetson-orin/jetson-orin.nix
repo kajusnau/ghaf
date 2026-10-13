@@ -134,7 +134,7 @@ let
 
       # NVIDIA SIM tool expects to run from its own tree where ./conf exists.
       # This is for unfused development/testing flow, not production provisioning.
-      ${pkgs.nvidia-jetpack.ftpmSimTooling}/bin/ftpm_sim_provisioning_tool.sh ek_prov
+      ${lib.getExe' pkgs.nvidia-jetpack.ftpmSimTooling "ftpm_sim_provisioning_tool.sh"} ek_prov
 
       if ! timeout 5s tpm2_nvreadpublic "$RSA_EK_CERT_HANDLE" >/dev/null 2>&1 ||
         ! timeout 5s tpm2_nvreadpublic "$ECC_EK_CERT_HANDLE" >/dev/null 2>&1; then
@@ -243,7 +243,7 @@ let
                 openssl x509 -in ek-rsa.pem -outform DER -out ek-rsa.der
                 openssl x509 -in ek-ecc.pem -outform DER -out ek-ecc.der
 
-        ${pkgs.buildPackages.nvidia-jetpack.genEkb}/bin/gen_ekb.py \
+        ${lib.getExe' pkgs.buildPackages.nvidia-jetpack.genEkb "gen_ekb.py"} \
           -chip t234 \
           -oem_k1_key oem_k1.key \
           -in_auth_key auth.key \

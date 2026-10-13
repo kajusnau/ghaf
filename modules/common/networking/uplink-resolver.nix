@@ -120,7 +120,7 @@ let
     # change, not merely device-added. $1 = interface, $2 = action.
     case "$2" in
       up | down | dhcp4-change | dhcp6-change | connectivity-change)
-        ${pkgs.systemd}/bin/systemctl restart --no-block ghaf-uplink-resolver.service || true
+        ${lib.getExe' pkgs.systemd "systemctl"} restart --no-block ghaf-uplink-resolver.service || true
         ;;
     esac
   '';
@@ -224,7 +224,7 @@ in
         # than landing between "flag gone" and "dependents restarted".
         ExecStartPost = pkgs.writeShellScript "ghaf-restart-uplink-dependents" ''
           if [ -e ${changedFlag} ]; then
-            ${pkgs.systemd}/bin/systemctl restart --no-block ${lib.escapeShellArgs cfg.dependentUnits}
+            ${lib.getExe' pkgs.systemd "systemctl"} restart --no-block ${lib.escapeShellArgs cfg.dependentUnits}
             rm -f ${changedFlag}
           fi
         '';

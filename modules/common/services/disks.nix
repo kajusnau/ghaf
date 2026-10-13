@@ -78,7 +78,7 @@ in
         Type = "simple";
         Restart = "always";
         RestartSec = "1";
-        ExecStart = "${pkgs.udiskie}/bin/udiskie -c /etc/udiskie.yml";
+        ExecStart = "${lib.getExe pkgs.udiskie} -c /etc/udiskie.yml";
       };
       wantedBy = [ "ghaf-session.target" ];
       after = [
