@@ -23,6 +23,7 @@ let
     mkMerge
     mkOption
     optionalString
+    recursiveUpdate
     removePrefix
     replaceString
     types
@@ -300,7 +301,7 @@ in
         };
         ppdSettings = mkPpdSettings "gui";
         profiles = mapAttrs (
-          name: _: tunedProfiles.vm // { script.script = "${getExe guiProfileScripts.${name}}"; }
+          name: _: recursiveUpdate tunedProfiles.vm { script.script = "${getExe guiProfileScripts.${name}}"; }
         ) guiProfileVariants;
       };
     })
@@ -316,7 +317,7 @@ in
         };
         ppdSettings = mkPpdSettings "net";
         profiles = mapAttrs (
-          name: _: tunedProfiles.vm // { script.script = "${getExe netProfileScripts.${name}}"; }
+          name: _: recursiveUpdate tunedProfiles.vm { script.script = "${getExe netProfileScripts.${name}}"; }
         ) netProfileVariants;
       };
 
@@ -336,8 +337,7 @@ in
         profiles = mapAttrs (
           name:
           { base, ... }:
-          tunedProfiles.vm
-          // {
+          recursiveUpdate tunedProfiles.vm {
             audio.timeout = audioTimeout.${base};
             script.script = "${getExe audioProfileScripts.${name}}";
           }

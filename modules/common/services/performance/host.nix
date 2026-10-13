@@ -23,6 +23,7 @@ let
     mkIf
     mkMerge
     mkOption
+    recursiveUpdate
     types
     ;
 
@@ -291,7 +292,7 @@ in
         profiles = mapAttrs (
           name:
           { base, ... }:
-          tunedProfiles.${base} // { script.script = "${getExe hostProfileScripts.${name}}"; }
+          recursiveUpdate tunedProfiles.${base} { script.script = "${getExe hostProfileScripts.${name}}"; }
         ) hostProfileVariants;
       };
       environment.etc."tuned/recommend.conf".text = ''
