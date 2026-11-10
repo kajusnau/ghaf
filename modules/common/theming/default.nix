@@ -310,8 +310,8 @@ in
             # Colour 0 is the VT background; keep the palette but make it pure black.
             console.colors.override.base00-hex = "000000";
 
-            # qt5ct/qt6ct fail to cross-compile
-            qt.enable = !isCross;
+            # No Ghaf VM ships a Qt app; a VM that adds one can enable this.
+            qt.enable = lib.mkDefault false;
           };
         };
 
