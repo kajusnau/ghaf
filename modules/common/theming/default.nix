@@ -377,28 +377,32 @@ in
       })
 
       (lib.mkIf config.stylix.targets.gtk.enable {
-        environment.etc = {
-          "xdg/gtk-3.0/settings.ini".source = gtkSettingsIni;
-          "xdg/gtk-4.0/settings.ini".source = gtkSettingsIni;
+        environment = {
+          etc = {
+            "xdg/gtk-3.0/settings.ini".source = gtkSettingsIni;
+            "xdg/gtk-4.0/settings.ini".source = gtkSettingsIni;
+          };
+
+          systemPackages = [ pkgs.gsettings-desktop-schemas ];
+
+          sessionVariables = {
+            XDG_DATA_DIRS = [
+              "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}"
+              "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}"
+              "${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}"
+            ];
+
+            GSETTINGS_SCHEMA_DIR =
+              pkgs.runCommand "ghaf-gsettings-schemas" { nativeBuildInputs = [ pkgs.glib ]; }
+                ''
+                  mkdir -p $out
+                  cp ${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas/*.xml $out/
+                  cp ${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas/*.xml $out/
+                  cp ${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}/glib-2.0/schemas/*.xml $out/
+                  glib-compile-schemas $out
+                '';
+          };
         };
-
-        environment.systemPackages = [ pkgs.gsettings-desktop-schemas ];
-
-        environment.sessionVariables.XDG_DATA_DIRS = [
-          "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}"
-          "${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}"
-          "${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}"
-        ];
-
-        environment.sessionVariables.GSETTINGS_SCHEMA_DIR =
-          pkgs.runCommand "ghaf-gsettings-schemas" { nativeBuildInputs = [ pkgs.glib ]; }
-            ''
-              mkdir -p $out
-              cp ${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas/*.xml $out/
-              cp ${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}/glib-2.0/schemas/*.xml $out/
-              cp ${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}/glib-2.0/schemas/*.xml $out/
-              glib-compile-schemas $out
-            '';
 
         programs.dconf = {
           enable = lib.mkForce true;
@@ -414,12 +418,14 @@ in
       })
 
       (lib.mkIf (config.stylix.targets.gtk.enable && cfg.gtkQtTheme.enable) {
-        environment.etc = {
-          "xdg/gtk-3.0/gtk.css".source = gtkCss;
-          "xdg/gtk-4.0/gtk.css".source = gtkCss;
-        };
+        environment = {
+          etc = {
+            "xdg/gtk-3.0/gtk.css".source = gtkCss;
+            "xdg/gtk-4.0/gtk.css".source = gtkCss;
+          };
 
-        environment.systemPackages = [ gtkThemePackage ];
+          systemPackages = [ gtkThemePackage ];
+        };
 
         programs.dconf.profiles.user.databases = [
           {
@@ -443,9 +449,10 @@ in
       })
 
       (lib.mkIf (config.stylix.targets.qt.enable && cfg.gtkQtTheme.enable) {
-        environment.etc."xdg/Kvantum/kvantum.kvconfig".source = kvantumConfig;
-
-        environment.systemPackages = [ kvantumThemePackage ];
+        environment = {
+          etc."xdg/Kvantum/kvantum.kvconfig".source = kvantumConfig;
+          systemPackages = [ kvantumThemePackage ];
+        };
 
         qt.style = lib.mkForce "kvantum";
       })

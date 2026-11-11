@@ -71,7 +71,7 @@ let
     app:
     app
     // {
-      exec = "${pkgs.givc-cli}/bin/givc-cli ${hostConfig.givc.cliArgs} start app --vm ${app.vm} ${
+      exec = "${lib.getExe' pkgs.givc-cli "givc-cli"} ${hostConfig.givc.cliArgs} start app --vm ${app.vm} ${
         lib.strings.toLower (lib.replaceStrings [ " " ] [ "-" ] app.desktopName)
       }";
     }
@@ -133,8 +133,10 @@ in
 
     nix.enable = lib.mkDefault (globalConfig.nix.enable or false);
     development = {
-      debug.tools.enable = lib.mkDefault (globalConfig.development.debug.tools.enable or false);
-      debug.tools.gui.enable = lib.mkDefault (globalConfig.development.debug.tools.enable or false);
+      debug.tools = {
+        enable = lib.mkDefault (globalConfig.development.debug.tools.enable or false);
+        gui.enable = lib.mkDefault (globalConfig.development.debug.tools.enable or false);
+      };
     };
 
     # Networking hosts - from hostConfig
@@ -172,9 +174,9 @@ in
     givc = {
       enable = globalConfig.givc.enable or false;
       debug = globalConfig.givc.debug or false;
+      guivm.enable = true;
+      sni.enable = true;
     };
-    givc.guivm.enable = true;
-    givc.sni.enable = true;
 
     # Storage - from globalConfig
     storagevm = {
@@ -196,20 +198,22 @@ in
         inherit vmName;
       };
 
-      tpm.passthrough = {
-        # TPM passthrough is only supported on x86_64
-        enable =
-          (globalConfig.storage.encryption.enable or false)
-          && ((globalConfig.platform.hostSystem or "") == "x86_64-linux");
-        rootNVIndex = "0x81703000"; # TPM2 NV index for gui-vm LUKS key
-      };
+      tpm = {
+        passthrough = {
+          # TPM passthrough is only supported on x86_64
+          enable =
+            (globalConfig.storage.encryption.enable or false)
+            && ((globalConfig.platform.hostSystem or "") == "x86_64-linux");
+          rootNVIndex = "0x81703000"; # TPM2 NV index for gui-vm LUKS key
+        };
 
-      tpm.emulated = {
-        # Use emulated TPM for non-x86_64 systems when encryption is enabled
-        enable =
-          (globalConfig.storage.encryption.enable or false)
-          && ((globalConfig.platform.hostSystem or "") != "x86_64-linux");
-        name = vmName;
+        emulated = {
+          # Use emulated TPM for non-x86_64 systems when encryption is enabled
+          enable =
+            (globalConfig.storage.encryption.enable or false)
+            && ((globalConfig.platform.hostSystem or "") != "x86_64-linux");
+          name = vmName;
+        };
       };
     };
 
@@ -313,13 +317,14 @@ in
       audit.enable = lib.mkDefault (globalConfig.security.audit.enable or false);
       fail2ban.enable = globalConfig.security.ssh.debug.enable or false;
 
-      # Debug SSH (unprotected)
-      ssh.debug.enable = lib.mkDefault (globalConfig.security.ssh.debug.enable or false);
+      ssh = {
+        # Debug SSH (unprotected)
+        debug.enable = lib.mkDefault (globalConfig.security.ssh.debug.enable or false);
 
-      # Release SSH: posture owns the enable; keys/principals/options come from
-      # the ghaf.org translation layer, not from this base.
-      ssh.release.enable = lib.mkDefault (globalConfig.security.ssh.release.enable or false);
-
+        # Release SSH: posture owns the enable; keys/principals/options come from
+        # the ghaf.org translation layer, not from this base.
+        release.enable = lib.mkDefault (globalConfig.security.ssh.release.enable or false);
+      };
       spire.agents.downstream = {
         enable = globalConfig.spire.enable or false;
         logLevel = if globalConfig.spire.debug then "DEBUG" else "INFO";

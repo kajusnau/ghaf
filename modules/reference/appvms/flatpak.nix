@@ -32,7 +32,7 @@ let
       # TODO: Investigate
       export PATH=/run/wrappers/bin:/run/current-system/sw/bin
       # Quite verbose by default, so we set the logging to error
-      RUST_LOG=error ${pkgs.cosmic-store}/bin/cosmic-store
+      RUST_LOG=error ${lib.getExe' pkgs.cosmic-store "cosmic-store"}
     '';
   };
 
@@ -210,7 +210,7 @@ let
   xdgUrlFlatpakItem = pkgs.makeDesktopItem {
     name = "ghaf-url-xdg-flatpak";
     desktopName = "Ghaf URL Opener";
-    exec = "${urlScript}/bin/xdgflatpakurl %u";
+    exec = "${lib.getExe urlScript} %u";
     mimeTypes = [
       "text/html"
       "x-scheme-handler/http"
@@ -417,7 +417,6 @@ in
           ];
         extraModules = [
           {
-            ghaf.givc.sni.enable = true;
             services = {
               flatpak.enable = lib.mkDefault true;
               packagekit.enable = lib.mkDefault true;
@@ -437,6 +436,7 @@ in
               };
             };
             ghaf = {
+              givc.sni.enable = true;
               xdgitems.enable = lib.mkDefault true;
 
               theming.cosmic.enable = lib.mkDefault true;

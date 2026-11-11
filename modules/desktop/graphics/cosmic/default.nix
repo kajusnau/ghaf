@@ -377,14 +377,171 @@ in
     services = {
       desktopManager.cosmic.enable = true;
       displayManager.cosmic-greeter.enable = true;
+
+      # TODO: Revisit below when https://github.com/NixOS/nixpkgs/pull/539810 is available
+      gnome.gnome-keyring.enable = lib.mkForce false;
+      power-profiles-daemon.enable = lib.mkForce false;
+
+      # Fails to build in cross-compilation for Orins
+      orca.enable = pkgs.stdenv.hostPlatform.isx86_64;
     };
 
-    ghaf.graphics = {
-      login-manager.enable = true;
-      login-manager.failLock.enable = true;
-    };
+    ghaf = {
+      graphics = {
+        login-manager = {
+          enable = true;
+          failLock.enable = true;
+        };
+        screen-recorder.enable = cfg.screenRecorder.enable;
+      };
 
-    ghaf.graphics.screen-recorder.enable = cfg.screenRecorder.enable;
+      services.power-manager.suspend.extraResumeCommands =
+        # Workaround for https://github.com/pop-os/cosmic-applets/issues/1390
+        # TODO: Remove when upstream issue is fixed
+        ''
+          # The NetworkManager D-Bus proxy and forwarded PipeWire core recover
+          # asynchronously after net-vm and audio-vm resume. Restarting the panel
+          # before they accept requests leaves their applets permanently empty.
+          network_wait_pid=""
+          pipewire_wait_pid=""
+          bluetooth_wait_pid=""
+          if systemctl -q is-enabled dbus-proxy-networkmanager.service; then
+            ${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe pkgs.bash} -c '
+              until ${lib.getExe' pkgs.systemd "busctl"} --system get-property \
+                org.freedesktop.NetworkManager \
+                /org/freedesktop/NetworkManager \
+                org.freedesktop.NetworkManager State >/dev/null 2>&1; do
+                ${lib.getExe' pkgs.coreutils "sleep"} 0.5
+              done
+            ' &
+            network_wait_pid=$!
+          fi
+
+          if [ -S /tmp/pipewire-0 ]; then
+            ${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe pkgs.bash} -c '
+              until PIPEWIRE_RUNTIME_DIR=/tmp ${lib.getExe' pkgs.coreutils "timeout"} 2 \
+                ${lib.getExe' pkgs.wireplumber "wpctl"} status >/dev/null 2>&1; do
+                ${lib.getExe' pkgs.coreutils "sleep"} 0.5
+              done
+            ' &
+            pipewire_wait_pid=$!
+          fi
+
+          ${lib.optionalString graphicsProfileCfg.bluetooth.applet.enable ''
+            if systemctl -q is-enabled dbus-proxy-bluetooth.service; then
+              # The GIVC socket may reappear before BlueZ is ready. Wait for the
+              # source adapter, then rebuild the proxy so it does not retain the
+              # stale pre-suspend object map.
+              (
+                stable_powered=0
+                source_deadline=$((SECONDS + 15))
+                while [ "$SECONDS" -lt "$source_deadline" ] && [ "$stable_powered" -lt 3 ]; do
+                  source_adapter=$(
+                    ${lib.getExe' pkgs.coreutils "timeout"} 2 \
+                      ${lib.getExe' pkgs.systemd "busctl"} --address=unix:path=/tmp/dbusproxy_snd.sock \
+                        --json=short call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects \
+                        2>/dev/null \
+                      | ${lib.getExe pkgs.jq} -r \
+                        ".data[0] | to_entries[] | select(.value | has(\"org.bluez.Adapter1\")) | .key" \
+                      | ${lib.getExe' pkgs.coreutils "head"} -n1
+                  )
+                  if [ -n "$source_adapter" ] && [ "$(
+                    ${lib.getExe' pkgs.coreutils "timeout"} 2 \
+                      ${lib.getExe' pkgs.systemd "busctl"} --address=unix:path=/tmp/dbusproxy_snd.sock \
+                        get-property org.bluez "$source_adapter" org.bluez.Adapter1 Powered \
+                        2>/dev/null
+                  )" = "b true" ]; then
+                    stable_powered=$((stable_powered + 1))
+                  else
+                    stable_powered=0
+                  fi
+                  ${lib.getExe' pkgs.coreutils "sleep"} 0.5
+                done
+
+                if [ "$stable_powered" -lt 3 ]; then
+                  echo "Source Bluetooth adapter did not stabilize before proxy restart" >&2
+                  exit 1
+                fi
+
+                ${lib.getExe' pkgs.systemd "systemctl"} restart dbus-proxy-bluetooth.service
+
+                proxy_adapter=""
+                proxy_deadline=$((SECONDS + 5))
+                while [ "$SECONDS" -lt "$proxy_deadline" ] && [ -z "$proxy_adapter" ]; do
+                  proxy_adapter=$(
+                    ${lib.getExe' pkgs.coreutils "timeout"} 2 \
+                      ${lib.getExe' pkgs.systemd "busctl"} --system --json=short \
+                        call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects \
+                        2>/dev/null \
+                      | ${lib.getExe pkgs.jq} -r \
+                        ".data[0] | to_entries[] | select(.value | has(\"org.bluez.Adapter1\")) | .key" \
+                      | ${lib.getExe' pkgs.coreutils "head"} -n1
+                  )
+                  [ -n "$proxy_adapter" ] && break
+                  ${lib.getExe' pkgs.coreutils "sleep"} 0.5
+                done
+
+                if [ -z "$proxy_adapter" ]; then
+                  echo "Bluetooth adapter did not appear through the rebuilt proxy" >&2
+                  exit 1
+                fi
+
+                # Give property restoration its own budget. Unlike one timeout
+                # around the whole sequence, this cannot terminate after the
+                # proxy restart but before the power-on attempt.
+                power_deadline=$((SECONDS + 8))
+                while [ "$SECONDS" -lt "$power_deadline" ]; do
+                  ${lib.getExe' pkgs.systemd "busctl"} --system set-property \
+                    org.bluez "$proxy_adapter" org.bluez.Adapter1 Powered b true \
+                    >/dev/null 2>&1 || true
+                  if [ "$(
+                    ${lib.getExe' pkgs.systemd "busctl"} --system get-property \
+                      org.bluez "$proxy_adapter" org.bluez.Adapter1 Powered \
+                      2>/dev/null
+                  )" = "b true" ]; then
+                    exit 0
+                  fi
+                  ${lib.getExe' pkgs.coreutils "sleep"} 0.5
+                done
+
+                echo "Bluetooth adapter $proxy_adapter did not power on" >&2
+                exit 1
+              ) &
+              bluetooth_wait_pid=$!
+            fi
+          ''}
+
+          if [ -n "$network_wait_pid" ]; then
+            wait "$network_wait_pid" || echo "NetworkManager proxy did not recover before the panel restart"
+          fi
+          if [ -n "$pipewire_wait_pid" ]; then
+            wait "$pipewire_wait_pid" || echo "PipeWire control did not recover before the panel restart"
+          fi
+          if [ -n "$bluetooth_wait_pid" ]; then
+            wait "$bluetooth_wait_pid" || echo "Bluetooth proxy did not recover before the panel restart"
+          fi
+
+          pid=$(${lib.getExe' pkgs.busybox "pgrep"} -f "cosmic-panel" | ${lib.getExe' pkgs.busybox "head"} -n1)
+          if [ -n "$pid" ]; then
+            ${lib.getExe' pkgs.busybox "kill"} "$pid" || true
+          else
+            echo "No COSMIC panel PID found"
+          fi
+          #
+          # Workaround for volume slider not working and volume panels not showing after resume
+          # zlink 0.7.0 fixes the COSMIC settings daemon resume issue.
+          # TODO: Remove when zlink ≥ 0.7.0 is used by COSMIC (currently it's 0.5.0)
+          # COSMIC Cargo.lock reference:
+          # https://github.com/pop-os/cosmic-settings/blob/master/Cargo.lock#L9383
+          # Restart COSMIC settings daemon after suspend, as it may not resume properly on some systems
+          pid=$(${lib.getExe' pkgs.busybox "pgrep"} -f "cosmic-settings-daemon" | ${lib.getExe' pkgs.busybox "head"} -n1)
+          if [ -n "$pid" ]; then
+            ${lib.getExe' pkgs.busybox "kill"} -9 "$pid" || true
+          else
+            echo "No COSMIC settings daemon PID found"
+          fi
+        '';
+    };
 
     environment = {
       systemPackages =
@@ -420,220 +577,75 @@ in
       };
     };
 
-    ghaf.services.power-manager.suspend.extraResumeCommands =
-      # Workaround for https://github.com/pop-os/cosmic-applets/issues/1390
-      # TODO: Remove when upstream issue is fixed
-      ''
-        # The NetworkManager D-Bus proxy and forwarded PipeWire core recover
-        # asynchronously after net-vm and audio-vm resume. Restarting the panel
-        # before they accept requests leaves their applets permanently empty.
-        network_wait_pid=""
-        pipewire_wait_pid=""
-        bluetooth_wait_pid=""
-        if systemctl -q is-enabled dbus-proxy-networkmanager.service; then
-          ${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe pkgs.bash} -c '
-            until ${lib.getExe' pkgs.systemd "busctl"} --system get-property \
-              org.freedesktop.NetworkManager \
-              /org/freedesktop/NetworkManager \
-              org.freedesktop.NetworkManager State >/dev/null 2>&1; do
-              ${lib.getExe' pkgs.coreutils "sleep"} 0.5
-            done
-          ' &
-          network_wait_pid=$!
-        fi
-
-        if [ -S /tmp/pipewire-0 ]; then
-          ${lib.getExe' pkgs.coreutils "timeout"} 30 ${lib.getExe pkgs.bash} -c '
-            until PIPEWIRE_RUNTIME_DIR=/tmp ${lib.getExe' pkgs.coreutils "timeout"} 2 \
-              ${lib.getExe' pkgs.wireplumber "wpctl"} status >/dev/null 2>&1; do
-              ${lib.getExe' pkgs.coreutils "sleep"} 0.5
-            done
-          ' &
-          pipewire_wait_pid=$!
-        fi
-
-        ${lib.optionalString graphicsProfileCfg.bluetooth.applet.enable ''
-          if systemctl -q is-enabled dbus-proxy-bluetooth.service; then
-            # The GIVC socket may reappear before BlueZ is ready. Wait for the
-            # source adapter, then rebuild the proxy so it does not retain the
-            # stale pre-suspend object map.
-            (
-              stable_powered=0
-              source_deadline=$((SECONDS + 15))
-              while [ "$SECONDS" -lt "$source_deadline" ] && [ "$stable_powered" -lt 3 ]; do
-                source_adapter=$(
-                  ${lib.getExe' pkgs.coreutils "timeout"} 2 \
-                    ${lib.getExe' pkgs.systemd "busctl"} --address=unix:path=/tmp/dbusproxy_snd.sock \
-                      --json=short call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects \
-                      2>/dev/null \
-                    | ${lib.getExe pkgs.jq} -r \
-                      ".data[0] | to_entries[] | select(.value | has(\"org.bluez.Adapter1\")) | .key" \
-                    | ${lib.getExe' pkgs.coreutils "head"} -n1
-                )
-                if [ -n "$source_adapter" ] && [ "$(
-                  ${lib.getExe' pkgs.coreutils "timeout"} 2 \
-                    ${lib.getExe' pkgs.systemd "busctl"} --address=unix:path=/tmp/dbusproxy_snd.sock \
-                      get-property org.bluez "$source_adapter" org.bluez.Adapter1 Powered \
-                      2>/dev/null
-                )" = "b true" ]; then
-                  stable_powered=$((stable_powered + 1))
-                else
-                  stable_powered=0
-                fi
-                ${lib.getExe' pkgs.coreutils "sleep"} 0.5
-              done
-
-              if [ "$stable_powered" -lt 3 ]; then
-                echo "Source Bluetooth adapter did not stabilize before proxy restart" >&2
-                exit 1
-              fi
-
-              ${lib.getExe' pkgs.systemd "systemctl"} restart dbus-proxy-bluetooth.service
-
-              proxy_adapter=""
-              proxy_deadline=$((SECONDS + 5))
-              while [ "$SECONDS" -lt "$proxy_deadline" ] && [ -z "$proxy_adapter" ]; do
-                proxy_adapter=$(
-                  ${lib.getExe' pkgs.coreutils "timeout"} 2 \
-                    ${lib.getExe' pkgs.systemd "busctl"} --system --json=short \
-                      call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects \
-                      2>/dev/null \
-                    | ${lib.getExe pkgs.jq} -r \
-                      ".data[0] | to_entries[] | select(.value | has(\"org.bluez.Adapter1\")) | .key" \
-                    | ${lib.getExe' pkgs.coreutils "head"} -n1
-                )
-                [ -n "$proxy_adapter" ] && break
-                ${lib.getExe' pkgs.coreutils "sleep"} 0.5
-              done
-
-              if [ -z "$proxy_adapter" ]; then
-                echo "Bluetooth adapter did not appear through the rebuilt proxy" >&2
-                exit 1
-              fi
-
-              # Give property restoration its own budget. Unlike one timeout
-              # around the whole sequence, this cannot terminate after the
-              # proxy restart but before the power-on attempt.
-              power_deadline=$((SECONDS + 8))
-              while [ "$SECONDS" -lt "$power_deadline" ]; do
-                ${lib.getExe' pkgs.systemd "busctl"} --system set-property \
-                  org.bluez "$proxy_adapter" org.bluez.Adapter1 Powered b true \
-                  >/dev/null 2>&1 || true
-                if [ "$(
-                  ${lib.getExe' pkgs.systemd "busctl"} --system get-property \
-                    org.bluez "$proxy_adapter" org.bluez.Adapter1 Powered \
-                    2>/dev/null
-                )" = "b true" ]; then
-                  exit 0
-                fi
-                ${lib.getExe' pkgs.coreutils "sleep"} 0.5
-              done
-
-              echo "Bluetooth adapter $proxy_adapter did not power on" >&2
-              exit 1
-            ) &
-            bluetooth_wait_pid=$!
-          fi
-        ''}
-
-        if [ -n "$network_wait_pid" ]; then
-          wait "$network_wait_pid" || echo "NetworkManager proxy did not recover before the panel restart"
-        fi
-        if [ -n "$pipewire_wait_pid" ]; then
-          wait "$pipewire_wait_pid" || echo "PipeWire control did not recover before the panel restart"
-        fi
-        if [ -n "$bluetooth_wait_pid" ]; then
-          wait "$bluetooth_wait_pid" || echo "Bluetooth proxy did not recover before the panel restart"
-        fi
-
-        pid=$(${lib.getExe' pkgs.busybox "pgrep"} -f "cosmic-panel" | ${lib.getExe' pkgs.busybox "head"} -n1)
-        if [ -n "$pid" ]; then
-          ${lib.getExe' pkgs.busybox "kill"} "$pid" || true
-        else
-          echo "No COSMIC panel PID found"
-        fi
-        #
-        # Workaround for volume slider not working and volume panels not showing after resume
-        # zlink 0.7.0 fixes the COSMIC settings daemon resume issue.
-        # TODO: Remove when zlink ≥ 0.7.0 is used by COSMIC (currently it's 0.5.0)
-        # COSMIC Cargo.lock reference:
-        # https://github.com/pop-os/cosmic-settings/blob/master/Cargo.lock#L9383
-        # Restart COSMIC settings daemon after suspend, as it may not resume properly on some systems
-        pid=$(${lib.getExe' pkgs.busybox "pgrep"} -f "cosmic-settings-daemon" | ${lib.getExe' pkgs.busybox "head"} -n1)
-        if [ -n "$pid" ]; then
-          ${lib.getExe' pkgs.busybox "kill"} -9 "$pid" || true
-        else
-          echo "No COSMIC settings daemon PID found"
-        fi
-      '';
-
-    systemd.user.services = {
-      # Only worth a unit when there is something to run.
-      autostart = lib.mkIf (cfg.extraAutostart != "") {
-        description = "Ghaf autostart";
-        serviceConfig.ExecStart = "${getExe autostart}";
-        partOf = [ "cosmic-session.target" ];
-        wantedBy = [ "cosmic-session.target" ];
-      };
-
-      # Kill cosmic-osd if it exceeds CPU usage threshold
-      # TODO: remove when upstream fixes the issue
-      # ref https://github.com/pop-os/cosmic-osd/issues/70
-      cosmic-cpu-watchdog =
-        let
-          cosmic-cpu-watchdog = pkgs.writeShellApplication {
-            name = "cosmic-cpu-watchdog";
-
-            runtimeInputs = [
-              pkgs.procps
-              pkgs.gawk
-            ];
-
-            text = ''
-              PROCESSES=("cosmic-osd")
-
-              THRESHOLD=80
-              INTERVAL=20
-              COOLDOWN=60
-              LAST_KILL=0
-
-              while true; do
-                  NOW=$(date +%s)
-
-                  for PROC in "''${PROCESSES[@]}"; do
-                      PID=$(pidof -s "$PROC" 2>/dev/null) || continue
-                      CPU=$(ps -o %cpu= -p "$PID" 2>/dev/null | awk '{print int($1)}')
-                      [[ -z "$CPU" ]] && continue
-
-                      if (( CPU > THRESHOLD )); then
-                          if (( NOW - LAST_KILL >= COOLDOWN )); then
-                              echo "$(date) High CPU detected ($PROC: ''${CPU}%), killing processes..."
-                              for KILL_PROC in "''${PROCESSES[@]}"; do
-                                  pkill -x "$KILL_PROC" && echo "$(date) Killed $KILL_PROC"
-                              done
-                              LAST_KILL=$NOW
-                          fi
-                      fi
-                  done
-
-                  sleep "$INTERVAL"
-              done
-            '';
-          };
-        in
-        {
-          description = "Ghaf COSMIC CPU usage watchdog";
-          serviceConfig.ExecStart = "${getExe cosmic-cpu-watchdog}";
-          after = [ "cosmic-session.target" ];
+    systemd.user = {
+      services = {
+        # Only worth a unit when there is something to run.
+        autostart = lib.mkIf (cfg.extraAutostart != "") {
+          description = "Ghaf autostart";
+          serviceConfig.ExecStart = "${getExe autostart}";
+          partOf = [ "cosmic-session.target" ];
           wantedBy = [ "cosmic-session.target" ];
         };
-    };
 
-    systemd.user.targets.ghaf-session = {
-      description = "Ghaf graphical session";
-      bindsTo = [ "cosmic-session.target" ];
-      after = [ "cosmic-session.target" ];
-      wantedBy = [ "cosmic-session.target" ];
+        # Kill cosmic-osd if it exceeds CPU usage threshold
+        # TODO: remove when upstream fixes the issue
+        # ref https://github.com/pop-os/cosmic-osd/issues/70
+        cosmic-cpu-watchdog =
+          let
+            cosmic-cpu-watchdog = pkgs.writeShellApplication {
+              name = "cosmic-cpu-watchdog";
+
+              runtimeInputs = [
+                pkgs.procps
+                pkgs.gawk
+              ];
+
+              text = ''
+                PROCESSES=("cosmic-osd")
+
+                THRESHOLD=80
+                INTERVAL=20
+                COOLDOWN=60
+                LAST_KILL=0
+
+                while true; do
+                    NOW=$(date +%s)
+
+                    for PROC in "''${PROCESSES[@]}"; do
+                        PID=$(pidof -s "$PROC" 2>/dev/null) || continue
+                        CPU=$(ps -o %cpu= -p "$PID" 2>/dev/null | awk '{print int($1)}')
+                        [[ -z "$CPU" ]] && continue
+
+                        if (( CPU > THRESHOLD )); then
+                            if (( NOW - LAST_KILL >= COOLDOWN )); then
+                                echo "$(date) High CPU detected ($PROC: ''${CPU}%), killing processes..."
+                                for KILL_PROC in "''${PROCESSES[@]}"; do
+                                    pkill -x "$KILL_PROC" && echo "$(date) Killed $KILL_PROC"
+                                done
+                                LAST_KILL=$NOW
+                            fi
+                        fi
+                    done
+
+                    sleep "$INTERVAL"
+                done
+              '';
+            };
+          in
+          {
+            description = "Ghaf COSMIC CPU usage watchdog";
+            serviceConfig.ExecStart = "${getExe cosmic-cpu-watchdog}";
+            after = [ "cosmic-session.target" ];
+            wantedBy = [ "cosmic-session.target" ];
+          };
+      };
+
+      targets.ghaf-session = {
+        description = "Ghaf graphical session";
+        bindsTo = [ "cosmic-session.target" ];
+        after = [ "cosmic-session.target" ];
+        wantedBy = [ "cosmic-session.target" ];
+      };
     };
 
     # Below we adjust the default services from desktopManager.cosmic
@@ -643,12 +655,7 @@ in
     hardware.bluetooth.enable = graphicsProfileCfg.bluetooth.enable;
     networking.networkmanager.enable = graphicsProfileCfg.networkManager.enable;
 
-    # TODO: Revisit below when https://github.com/NixOS/nixpkgs/pull/539810 is available
-    services.gnome.gnome-keyring.enable = lib.mkForce false;
-    services.power-profiles-daemon.enable = lib.mkForce false;
     # Qt apps run in app VMs and read their own theme config
     qt.enable = false;
-    # Fails to build in cross-compilation for Orins
-    services.orca.enable = pkgs.stdenv.hostPlatform.isx86_64;
   };
 }

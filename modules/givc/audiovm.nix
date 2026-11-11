@@ -33,94 +33,97 @@ in
         message = "Policy admin cannot be enabled in audiovm.";
       }
     ];
-    # Configure audiovm service
-    givc.sysvm = {
-      enable = true;
-      inherit (config.ghaf.givc) debug;
-      network = {
-        agent.transport = {
-          name = hostName;
-          addr = hosts.${hostName}.ipv4;
-          port = "9000";
+    givc = {
+      # Configure audiovm service
+      sysvm = {
+        enable = true;
+        inherit (config.ghaf.givc) debug;
+        network = {
+          agent.transport = {
+            name = hostName;
+            addr = hosts.${hostName}.ipv4;
+            port = "9000";
+          };
+          tls.enable = config.ghaf.givc.enableTls;
+          admin.transport = lib.head config.ghaf.givc.adminConfig.addresses;
         };
-        tls.enable = config.ghaf.givc.enableTls;
-        admin.transport = lib.head config.ghaf.givc.adminConfig.addresses;
-      };
-      capabilities = {
-        services =
-          optionals config.ghaf.gracefulShutdown [
-            "poweroff.target"
-          ]
-          ++ optionals config.ghaf.services.power-manager.vm.enable [
-            "suspend.target"
-            "systemd-suspend.service"
-          ]
-          ++ optionals (
-            config.ghaf.services.performance.audio.enable && config.ghaf.services.performance.audio.tuned.enable
-          ) (map (profile: "${profile}.service") config.ghaf.services.performance.audio.tuned.profileNames);
-        socketProxy = {
-          enable = true;
-          sockets =
-            optionals (builtins.elem guivmName config.ghaf.common.vms) [
+        capabilities = {
+          services =
+            optionals config.ghaf.gracefulShutdown [
+              "poweroff.target"
+            ]
+            ++ optionals config.ghaf.services.power-manager.vm.enable [
+              "suspend.target"
+              "systemd-suspend.service"
+            ]
+            ++ optionals (
+              config.ghaf.services.performance.audio.enable && config.ghaf.services.performance.audio.tuned.enable
+            ) (map (profile: "${profile}.service") config.ghaf.services.performance.audio.tuned.profileNames);
+          socketProxy = {
+            enable = true;
+            sockets =
+              optionals (builtins.elem guivmName config.ghaf.common.vms) [
+                {
+                  transport = {
+                    name = guivmName;
+                    addr = hosts.${guivmName}.ipv4;
+                    port = "9011";
+                    protocol = "tcp";
+                  };
+                  socket = "/tmp/dbusproxy_snd.sock";
+                }
+              ]
+              ++
+                optionals
+                  (
+                    builtins.elem guivmName config.ghaf.common.vms
+                    && audioCfg.enable
+                    && audioCfg.server.pipewireForwarding.enable
+                  )
+                  [
+                    {
+                      transport = {
+                        name = guivmName;
+                        addr = hosts.${guivmName}.ipv4;
+                        inherit (audioCfg.server.pipewireForwarding) port;
+                        protocol = "tcp";
+                      };
+                      inherit (audioCfg.server.pipewireForwarding) socket;
+                    }
+                  ];
+          };
+          eventProxy = {
+            enable = true;
+            events = optionals (builtins.elem guivmName config.ghaf.common.vms) [
               {
                 transport = {
                   name = guivmName;
                   addr = hosts.${guivmName}.ipv4;
-                  port = "9011";
+                  port = "9012";
                   protocol = "tcp";
                 };
-                socket = "/tmp/dbusproxy_snd.sock";
+                producer.enable = true;
+                device = "mouse";
               }
-            ]
-            ++
-              optionals
-                (
-                  builtins.elem guivmName config.ghaf.common.vms
-                  && audioCfg.enable
-                  && audioCfg.server.pipewireForwarding.enable
-                )
-                [
-                  {
-                    transport = {
-                      name = guivmName;
-                      addr = hosts.${guivmName}.ipv4;
-                      inherit (audioCfg.server.pipewireForwarding) port;
-                      protocol = "tcp";
-                    };
-                    inherit (audioCfg.server.pipewireForwarding) socket;
-                  }
-                ];
-        };
-        eventProxy = {
-          enable = true;
-          events = optionals (builtins.elem guivmName config.ghaf.common.vms) [
-            {
-              transport = {
-                name = guivmName;
-                addr = hosts.${guivmName}.ipv4;
-                port = "9012";
-                protocol = "tcp";
-              };
-              producer.enable = true;
-              device = "mouse";
-            }
-          ];
-        };
-        policy = mkIf policycfg.enable {
-          enable = true;
-          inherit (policycfg) storePath;
-          policies = mapAttrs (_name: value: value.dest) policycfg.policies;
+            ];
+          };
+          policy = mkIf policycfg.enable {
+            enable = true;
+            inherit (policycfg) storePath;
+            policies = mapAttrs (_name: value: value.dest) policycfg.policies;
+          };
         };
       };
-    };
-    givc.dbusproxy = {
-      enable = true;
-      system = {
+
+      dbusproxy = {
         enable = true;
-        user = config.ghaf.users.proxyUser.name;
-        socket = "/tmp/dbusproxy_snd.sock";
-        policy = {
-          talk = [ "org.bluez.*" ];
+        system = {
+          enable = true;
+          user = config.ghaf.users.proxyUser.name;
+          socket = "/tmp/dbusproxy_snd.sock";
+          policy = {
+            talk = [ "org.bluez.*" ];
+          };
         };
       };
     };

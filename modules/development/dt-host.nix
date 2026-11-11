@@ -32,13 +32,13 @@ in
         users = [ "ghaf" ];
         commands = [
           {
-            command = "${pkgs.efibootmgr}/bin/efibootmgr";
+            command = lib.getExe pkgs.efibootmgr;
             options = [ "NOPASSWD" ];
           }
           # Setting a BootNext you cannot act on is useless, so this is scoped
           # to the reboot verb alone rather than to systemctl generally.
           {
-            command = "${config.systemd.package}/bin/systemctl reboot";
+            command = "${lib.getExe' config.systemd.package "systemctl"} reboot";
             options = [ "NOPASSWD" ];
           }
         ];

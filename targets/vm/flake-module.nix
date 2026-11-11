@@ -103,11 +103,10 @@ let
               ];
 
               ghaf = {
-                # Enable the VM profile (creates netvmBase, audiovmBase, adminvmBase, mkAppVm)
-                profiles.vm.enable = true;
-
-                hardware.x86_64.common.enable = true;
-                hardware.tpm2.enable = true;
+                hardware = {
+                  x86_64.common.enable = true;
+                  tpm2.enable = true;
+                };
 
                 microvm-boot.enable = lib.mkForce false;
 
@@ -227,8 +226,11 @@ let
                   networking.enable = true;
                 };
 
-                # Enable all the default UI applications
                 profiles = {
+                  # Enable the VM profile (creates netvmBase, audiovmBase, adminvmBase, mkAppVm)
+                  vm.enable = true;
+
+                  # Enable all the default UI applications
                   graphics = {
                     enable = withGraphics;
                   };
