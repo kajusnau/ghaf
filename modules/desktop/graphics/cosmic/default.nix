@@ -175,8 +175,7 @@ in
         right = [
           "com.system76.CosmicAppletInputSources"
           "com.system76.CosmicAppletStatusArea"
-          "ae.tii.CosmicAppletKillSwitch"
-          "ae.tii.CosmicAppletUsbPassthrough"
+          "ae.tii.CosmicAppletDevices"
           "com.system76.CosmicAppletTiling"
           "com.system76.CosmicAppletNetwork"
           "com.system76.CosmicAppletBluetooth"
@@ -224,8 +223,7 @@ in
         right = [
           "com.system76.CosmicAppletInputSources"
           "com.system76.CosmicAppletStatusArea"
-          "ae.tii.CosmicAppletKillSwitch"
-          "ae.tii.CosmicAppletUsbPassthrough"
+          "ae.tii.CosmicAppletDevices"
           "com.system76.CosmicAppletTiling"
           "com.system76.CosmicAppletNetwork"
           "com.system76.CosmicAppletBluetooth"
@@ -392,7 +390,7 @@ in
         [
           ghaf-wallpapers
           grim # promptless screenshot for test automation
-          ghaf-usb-passthrough-applet
+          ghaf-device-applet
           (import ../launchers-pkg.nix { inherit pkgs config lib; })
         ]
         ++ [ (lib.hiPrio ghaf-cosmic-config) ];

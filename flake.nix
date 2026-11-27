@@ -89,7 +89,8 @@
 
     # A set of useful nix packages and utilities for ghaf
     ghafpkgs = {
-      url = "github:tiiuae/ghafpkgs";
+      # TODO: return to tiiuae/ghafpkgs once the ghaf-device-applet PR is merged there.
+      url = "github:kajusnau/ghafpkgs/feat/ghaf-device-applet";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";

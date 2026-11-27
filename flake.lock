@@ -411,15 +411,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1795591987,
-        "narHash": "sha256-8eyrkmwle9OLxOvrFsAtqxq3uZ3+8M7hIK8u+9OYPNA=",
-        "owner": "tiiuae",
+        "lastModified": 1795779646,
+        "narHash": "sha256-eY7d0hw9Iwj/+S/yVP4JwzEwUb9ag53jG2dTmNBIVUM=",
+        "owner": "kajusnau",
         "repo": "ghafpkgs",
-        "rev": "723e10783151ed8457b461c60cc3b86d7112b1ad",
+        "rev": "f1ddf035a289cf02f991d38f6561c39e6d9f80be",
         "type": "github"
       },
       "original": {
-        "owner": "tiiuae",
+        "owner": "kajusnau",
+        "ref": "feat/ghaf-device-applet",
         "repo": "ghafpkgs",
         "type": "github"
       }

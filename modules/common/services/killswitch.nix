@@ -20,9 +20,9 @@ in
 
   # TODO: Currently enabled for x86_64, we will evaluate the need for aarch64 support in the future
   config = mkIf (cfg.enable && pkgs.stdenv.hostPlatform.isx86_64) {
-    # The panel applet and the ghaf-kill-switch command. They block devices by
-    # detaching the passthrough devices tagged audio, net, cam and bt through
-    # the device manager API.
-    environment.systemPackages = [ pkgs.ghaf-kill-switch ];
+    # The ghaf-kill-switch command. It blocks devices by detaching the
+    # passthrough devices tagged audio, net, cam and bt through the device
+    # manager API.
+    environment.systemPackages = [ pkgs.ghaf-device-applet ];
   };
 }
